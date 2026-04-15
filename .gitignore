@@ -1,0 +1,87 @@
+# =============================
+# Maven
+# =============================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# =============================
+# IDE - IntelliJ IDEA
+# =============================
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# =============================
+# IDE - VS Code
+# =============================
+.vscode/
+!.vscode/extensions.json
+
+# =============================
+# IDE - Eclipse
+# =============================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# =============================
+# Spring Boot / Application Config
+# (chứa thông tin nhạy cảm: DB password, JWT secret, API keys)
+# =============================
+**/application-dev.yml
+**/application-prod.yml
+**/application-local.yml
+**/application-*.properties
+
+# =============================
+# Environment & Secrets
+# =============================
+.env
+.env.*
+*.env
+secrets.yml
+secrets.properties
+
+# =============================
+# Docker
+# =============================
+docker-compose.override.yml
+
+# =============================
+# Logs
+# =============================
+logs/
+*.log
+*.log.*
+log/
+
+# =============================
+# OS
+# =============================
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# =============================
+# Temp / Cache
+# =============================
+*.tmp
+*.temp
+*.cache
+.cache/

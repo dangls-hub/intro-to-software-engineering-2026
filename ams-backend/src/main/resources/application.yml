@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: ams-backend
+
+  datasource:
+    # Thay đổi port 3306 nếu MySQL local của bạn chạy port khác
+    url: jdbc:mysql://localhost:3306/bluemoon_ams?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh
+    username: root          # Tên đăng nhập MySQL local của dev
+    password: NhapMonCongNghePhanMem      # Mật khẩu MySQL local của dev (Sửa lại cho đúng)
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # update: tự động tạo/cập nhật bảng dựa trên Entity. 
+      # Lưu ý: Lên môi trường Production sẽ đổi thành 'validate' hoặc 'none'
+      ddl-auto: update
+    show-sql: true          # In câu lệnh SQL ra console để dễ debug
+    properties:
+      hibernate:
+        format_sql: true    # Format câu SQL cho dễ đọc
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 8080                # Port chạy backend
