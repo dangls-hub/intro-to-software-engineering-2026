@@ -1,14 +1,26 @@
 # Kế hoạch thực hiện dự án
 
-Tài liệu này tổng hợp kế hoạch thực hiện BlueMoon AMS trong 3 tuần, tính từ 06/05/2026 đến 26/05/2026. Mục tiêu là hoàn thành một bản MVP có thể demo được các nghiệp vụ chính: đăng nhập, quản lý căn hộ, quản lý cư dân, quản lý khoản thu và ghi nhận thanh toán.
+Tài liệu này mô tả kế hoạch tổng quan cho BlueMoon AMS trong 3 tuần, tính từ 06/05/2026 đến 26/05/2026. Các task chi tiết, trạng thái xử lý, assignee và tiến độ hằng ngày được quản lý trên GitHub Scrum board.
 
-## Roadmap 3 tuần
+## Nguồn quản lý công việc
 
-| Tuần | Thời gian | Mục tiêu | Tài liệu chi tiết |
+- Repository: [intro-to-software-engineering-2026](https://github.com/dangls-hub/intro-to-software-engineering-2026)
+- GitHub Scrum board: cập nhật link GitHub Project board tại đây sau khi nhóm chốt URL chia sẻ.
+
+## Quy ước sử dụng
+
+- `docs/01-planning` dùng để ghi mục tiêu sprint, phạm vi, vai trò, deliverables và tiêu chí hoàn thành.
+- GitHub Scrum board là nguồn chính để quản lý task chi tiết.
+- Khi có thay đổi nhỏ trong task hằng ngày, chỉ cập nhật GitHub board.
+- Chỉ cập nhật file planning khi thay đổi mục tiêu sprint, phạm vi MVP hoặc mốc bàn giao.
+
+## Roadmap 3 sprint
+
+| Sprint | Thời gian | Mục tiêu | Tài liệu chi tiết |
 |---|---|---|---|
-| Tuần 1 | 06/05/2026 - 12/05/2026 | Nền tảng, thiết kế, skeleton backend/frontend | [week-01-foundation.md](week-01-foundation.md) |
-| Tuần 2 | 13/05/2026 - 19/05/2026 | Hoàn thiện chức năng chính và tích hợp API | [week-02-core-features.md](week-02-core-features.md) |
-| Tuần 3 | 20/05/2026 - 26/05/2026 | Thanh toán, kiểm thử, demo và bàn giao | [week-03-testing-demo.md](week-03-testing-demo.md) |
+| Sprint 1 | 06/05/2026 - 12/05/2026 | Nền tảng, thiết kế, skeleton backend/frontend | [week-01-foundation.md](week-01-foundation.md) |
+| Sprint 2 | 13/05/2026 - 19/05/2026 | Hoàn thiện chức năng chính và tích hợp API | [week-02-core-features.md](week-02-core-features.md) |
+| Sprint 3 | 20/05/2026 - 26/05/2026 | Thanh toán, kiểm thử, demo và bàn giao | [week-03-testing-demo.md](week-03-testing-demo.md) |
 
 ## Phân công tổng quan
 
@@ -20,13 +32,16 @@ Tài liệu này tổng hợp kế hoạch thực hiện BlueMoon AMS trong 3 tu
 | Trần Đình Nam | Frontend | Giao diện, routing, màn hình CRUD, gọi API |
 | Phạm Việt Tiến | Database / Payment / QA | ERD, seed data, khoản thu, thanh toán, kiểm thử, Docker |
 
-## Nguyên tắc quản lý tiến độ
+## Cột trạng thái trên Scrum board
 
-- Mỗi task cần có người phụ trách, đầu ra rõ ràng và tiêu chí hoàn thành.
-- Ưu tiên hoàn thành luồng nghiệp vụ chính trước khi thêm tính năng mở rộng.
-- Code được review trước khi merge vào nhánh chính.
-- Demo nội bộ vào cuối mỗi tuần để phát hiện lỗi tích hợp sớm.
-- Các lỗi được phân loại theo mức độ: bắt buộc sửa, có thể chấp nhận, làm sau.
+| Cột | Ý nghĩa |
+|---|---|
+| Product Backlog | Task đã ghi nhận nhưng chưa đưa vào sprint hiện tại |
+| Sprint Backlog | Task được chọn cho sprint hiện tại |
+| Todo | Task đã sẵn sàng để làm |
+| In Progress | Task đang được xử lý |
+| Review | Task đã làm xong, đang chờ review/test |
+| Done | Task đã đạt tiêu chí hoàn thành |
 
 ## Mốc nghiệm thu MVP
 

@@ -1,14 +1,25 @@
-# Kế hoạch công việc Tuần 3: Thanh toán, kiểm thử và bàn giao
+# Sprint 3: Thanh toán, kiểm thử và bàn giao
 
 ## Thông tin chung
 
 - Thời gian: 20/05/2026 - 26/05/2026
-- Mục tiêu: hoàn thiện luồng thanh toán, kiểm thử end-to-end, sửa bug, chuẩn bị demo và tài liệu bàn giao.
-- Kết quả chính: MVP chạy được, có dữ liệu demo, có hướng dẫn setup, có kịch bản demo và báo cáo nhóm.
+- Sprint goal: hoàn thiện luồng thanh toán, kiểm thử end-to-end, sửa bug, chuẩn bị demo và bàn giao MVP.
+- Quản lý task chi tiết: GitHub Scrum board.
 
-## Thành viên và vai trò
+## Phạm vi sprint
 
-| Thành viên | Vai trò trong tuần 3 | Phạm vi phụ trách |
+| Nhóm công việc | Nội dung |
+|---|---|
+| Payment | Ghi nhận thanh toán, cập nhật trạng thái khoản thu, QR/mock payment nếu kịp |
+| Stabilization | Fix bug auth, căn hộ, cư dân, khoản thu và thanh toán |
+| Frontend Polish | Hoàn thiện màn khoản thu, thanh toán, responsive và trạng thái lỗi |
+| QA | Chạy checklist test, kiểm thử end-to-end, phân loại bug còn lại |
+| Deployment | Hoàn thiện hướng dẫn chạy local/Docker |
+| Reporting | Chuẩn bị báo cáo, kịch bản demo và tài liệu bàn giao |
+
+## Vai trò trong sprint
+
+| Thành viên | Vai trò | Trách nhiệm chính |
 |---|---|---|
 | Đỗ Hải Đăng | Release Lead | Chốt demo scope, review tích hợp, tổng hợp báo cáo, điều phối bàn giao |
 | Hoàng Gia Huy | Backend Stabilization | Fix security/API, test backend, hỗ trợ bug |
@@ -16,75 +27,38 @@
 | Trần Đình Nam | Frontend Polish | Màn khoản thu, thanh toán, polish UI, fix responsive |
 | Phạm Việt Tiến | Payment / QA / Deployment | Thanh toán, QR/mock payment, E2E test, hướng dẫn deploy |
 
-## Kế hoạch theo ngày
+## Deliverables
 
-| Ngày | Đỗ Hải Đăng | Hoàng Gia Huy | Nguyễn Đức Khải | Trần Đình Nam | Phạm Việt Tiến |
-|---|---|---|---|---|---|
-| 20/05 | Chốt danh sách chức năng demo | Fix security/API lỗi tồn đọng | Fix nghiệp vụ cư dân | Làm màn khoản thu | Hoàn thiện API thanh toán |
-| 21/05 | Review tích hợp toàn hệ thống | Hardening backend | Bổ sung export/tìm kiếm nếu kịp | Làm màn thanh toán | Làm Dynamic QR hoặc mock payment |
-| 22/05 | Chuẩn hóa tài liệu API | Test backend | Test resident flow | Gắn payment API | Test payment flow |
-| 23/05 | Viết báo cáo tiến độ và rủi ro | Fix bug nghiêm trọng | Fix bug nghiêm trọng | Fix UI/mobile | Viết Docker/dev setup guide |
-| 24/05 | Chuẩn bị kịch bản demo | Review lần cuối backend | Review dữ liệu demo | Polish giao diện | Kiểm thử end-to-end |
-| 25/05 | Tổng duyệt demo | Hỗ trợ fix bug | Hỗ trợ fix bug | Hỗ trợ fix bug UI | Checklist QA và đóng bug |
-| 26/05 | Bàn giao bản hoàn chỉnh | Đóng task backend | Đóng task backend | Đóng task frontend | Đóng task test/deploy |
+- API thanh toán hoạt động ở mức MVP.
+- Frontend có màn khoản thu và thanh toán đủ để demo.
+- Trạng thái khoản thu cập nhật đúng sau khi ghi nhận thanh toán.
+- Seed data đủ cho kịch bản demo.
+- Checklist kiểm thử được chạy trước ngày bàn giao.
+- Hướng dẫn setup local/Docker hoàn chỉnh.
+- Báo cáo nhóm và kịch bản demo sẵn sàng.
 
-## Công việc chi tiết
-
-### Đỗ Hải Đăng
-
-- Chốt danh sách chức năng sẽ demo, không mở thêm scope lớn trong tuần 3.
-- Review tích hợp toàn hệ thống: frontend, backend, database, dữ liệu mẫu.
-- Viết kịch bản demo theo luồng: đăng nhập, dashboard, căn hộ, cư dân, khoản thu, thanh toán.
-- Tổng hợp báo cáo nhóm: mục tiêu, công nghệ, phân công, kết quả, hạn chế, hướng phát triển.
-- Điều phối ngày bàn giao 26/05/2026.
-
-### Hoàng Gia Huy
-
-- Rà soát security config và các endpoint cần bảo vệ.
-- Fix các lỗi auth/căn hộ còn tồn đọng từ tuần 2.
-- Kiểm tra validation, HTTP status code và response error.
-- Chạy test backend và ghi lại kết quả.
-- Hỗ trợ các bug tích hợp nếu liên quan backend.
-
-### Nguyễn Đức Khải
-
-- Rà soát luồng cư dân, hộ gia đình và liên kết căn hộ.
-- Kiểm tra dữ liệu demo có phù hợp với kịch bản demo.
-- Fix lỗi nghiệp vụ: trùng thông tin, xóa/sửa cư dân, thông tin chủ hộ.
-- Nếu còn thời gian, bổ sung tìm kiếm/lọc hoặc export đơn giản.
-- Hỗ trợ test end-to-end cho các flow có resident.
-
-### Trần Đình Nam
-
-- Làm màn khoản thu: danh sách, tạo mới, xem trạng thái.
-- Làm màn thanh toán: danh sách giao dịch, ghi nhận thanh toán.
-- Gắn API payment/fee vào frontend.
-- Polish UI: spacing, responsive, empty state, loading, error.
-- Kiểm tra các thao tác demo không bị dừng ở trạng thái lỗi không rõ nguyên nhân.
-
-### Phạm Việt Tiến
-
-- Hoàn thiện API thanh toán và trạng thái payment.
-- Làm Dynamic QR ở mức demo hoặc mock payment nếu chưa tích hợp gateway thật.
-- Chuẩn bị seed data đầy đủ cho demo.
-- Viết hướng dẫn chạy dự án bằng Docker/MySQL và các lệnh cần thiết.
-- Lập checklist QA và chạy test end-to-end trước ngày 26/05/2026.
-
-## Kịch bản demo để kiểm thử
+## Kịch bản demo bắt buộc
 
 1. Đăng nhập bằng tài khoản admin/staff mẫu.
 2. Xem dashboard tổng quan.
-3. Tạo mới một căn hộ và cập nhật thông tin căn hộ.
-4. Tạo mới cư dân, gán cư dân vào căn hộ.
-5. Tạo khoản thu cho một căn hộ.
+3. Tạo mới hoặc cập nhật một căn hộ.
+4. Tạo mới cư dân và gán vào căn hộ.
+5. Tạo khoản thu cho căn hộ.
 6. Ghi nhận thanh toán cho khoản thu.
 7. Kiểm tra trạng thái thanh toán đã cập nhật trên frontend.
 
-## Tiêu chí hoàn thành tuần 3
+## Definition of Done
 
 - MVP chạy được từ frontend đến backend với database thật.
-- Demo được các luồng bắt buộc không cần sửa code thủ công.
-- Có seed data đủ để thuyết trình và kiểm thử.
-- Có hướng dẫn setup local/Docker.
-- Có báo cáo nhóm và tài liệu API cơ bản.
-- Bug còn lại được ghi rõ mức độ: bắt buộc sửa, có thể chấp nhận, làm sau.
+- Các issue bắt buộc cho demo đã ở trạng thái Done trên GitHub Scrum board.
+- Không còn bug Critical chặn demo.
+- Bug còn lại được ghi rõ mức độ và hướng xử lý.
+- Tài liệu deployment, testing và reports đã được cập nhật.
+- Nhóm đã tổng duyệt demo ít nhất một lần trước ngày 26/05/2026.
+
+## Rủi ro cần theo dõi
+
+- Luồng thanh toán phát sinh nghiệp vụ ngoài MVP.
+- Demo phụ thuộc dữ liệu thủ công chưa được seed ổn định.
+- Lỗi môi trường chạy local làm chậm buổi bàn giao.
+- Thiếu thời gian polish UI sau khi fix bug tích hợp.
