@@ -50,3 +50,20 @@
 - API contract thay đổi quá nhiều sau khi frontend bắt đầu tích hợp.
 - ERD chưa đủ rõ quan hệ giữa căn hộ, hộ gia đình và cư dân.
 - Cấu hình database giữa Docker và local không thống nhất.
+
+---
+
+## ✅ Kết quả thực tế (Sprint 1 - ĐÃ HOÀN THÀNH)
+
+| Hạng mục | Người thực hiện | Trạng thái | Ghi chú |
+|---|---|---|---|
+| Khởi tạo repo, nhánh và quy ước Git | Nguyễn Đức Khải | ✅ Done | PR #35 - `chore/init` |
+| Cấu trúc thư mục monorepo | Nguyễn Đức Khải | ✅ Done | PR #36, #37 - `feature/build-skeleton` |
+| Docker Compose cho MySQL (port 3307) | Nguyễn Đức Khải | ✅ Done | `docker-compose.yml` |
+| Backend skeleton Spring Boot (tất cả modules) | Nguyễn Đức Khải | ✅ Done | Module auth, apartment, resident, fee, payment đã có cấu trúc thư mục |
+| Backend `HealthController` tại `/api/v1/health` | Nguyễn Đức Khải | ✅ Done | |
+| Backend `common/` (cấu trúc thư mục: config, security, exception, response, util) | Nguyễn Đức Khải | ✅ Done | Cấu trúc sẵn sàng, chưa có logic |
+| Frontend skeleton (Vite + React + React Router) | Trần Đình Nam | ✅ Done | Cấu trúc features, hooks, store, routes, utils |
+| Trang Login UI (`LoginPage.jsx`) | Trần Đình Nam | ✅ Done | PR #39 - `feature/login-page` |
+| Khung UI Sprint 2 cho nhân viên (staff screens) | Trần Đình Nam | ✅ Done | `feat(frontend): implement sprint 2 staff screens` |
+| Tài liệu Planning (README + 3 sprint files) | Đỗ Hải Đăng | ✅ Done | `docs/01-planning/` |
