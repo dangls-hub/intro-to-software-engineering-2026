@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Building2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { login } from '../api/authApi';
 
 const initialForm = { username: '', password: '' };
@@ -125,6 +125,22 @@ function LoginPage({ onLogin }) {
             )}
           </button>
         </form>
+
+        <p
+          className="muted-text"
+          style={{
+            marginTop: 20,
+            textAlign: 'center',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <ShieldCheck size={14} style={{ opacity: 0.6 }} />
+          Hệ thống được bảo mật bằng JWT
+        </p>
       </section>
     </main>
   );
