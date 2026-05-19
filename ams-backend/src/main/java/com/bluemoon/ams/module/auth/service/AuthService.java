@@ -4,6 +4,7 @@ import com.bluemoon.ams.module.auth.dto.LoginRequest;
 import com.bluemoon.ams.module.auth.dto.LoginResponse;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
+import com.bluemoon.ams.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,13 +16,10 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    
-    // JwtUtil sẽ được tạo bởi Đỗ Hải Đăng trong common/security/JwtUtil.java
-    // AuthService sẽ gọi nó để tạo token
+    private final JwtUtil jwtUtil;
 
     /**
      * Xác thực user và trả JWT token
-     * Note: Logic tạo JWT token sẽ được hoàn thành khi JwtUtil sẵn sàng
      */
     public LoginResponse login(LoginRequest request) {
         try {
@@ -34,11 +32,11 @@ public class AuthService {
                 throw new RuntimeException("Mật khẩu không đúng");
             }
 
-            // TODO: Tạo JWT token (sẽ được implement khi JwtUtil sẵn sàng)
-            // String token = jwtUtil.generateToken(user);
+            // Tạo JWT token
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
 
             return LoginResponse.builder()
-                    .token(null)  // Sẽ được set khi JwtUtil sẵn sàng
+                    .token(token)
                     .userId(user.getId())
                     .username(user.getUsername())
                     .role(user.getRole().toString())
