@@ -9,55 +9,32 @@ import {
 import {
   Building2,
   CreditCard,
-  Home,
+  LayoutDashboard,
   LogOut,
   Receipt,
   Users,
 } from 'lucide-react';
-import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import LoginPage from './features/auth/pages/LoginPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
+import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import ResidentsPage from './features/residents/pages/ResidentsPage';
+import FeesPage from './features/fees/pages/FeesPage';
+import PaymentsPage from './features/payments/pages/PaymentsPage';
 import { clearAuthToken, getAuthToken, setAuthToken } from './lib/apiClient';
 
 function getInitialAuth() {
   const token = getAuthToken();
-
-  if (!token) {
-    return null;
-  }
-
-  return {
-    token,
-    user: {
-      username: 'staff',
-    },
-  };
-}
-
-function PlaceholderPage({ title, description }) {
-  return (
-    <>
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Sprint 3</p>
-          <h1>{title}</h1>
-        </div>
-      </header>
-      <section className="workspace-panel">
-        <p className="muted-text">{description}</p>
-      </section>
-    </>
-  );
+  if (!token) return null;
+  return { token, user: { username: 'staff' } };
 }
 
 function AppLayout({ auth, onLogout }) {
   const navItems = [
-    { to: '/', label: 'Tong quan', icon: Home, end: true },
-    { to: '/residents', label: 'Cu dan', icon: Users },
-    { to: '/apartments', label: 'Can ho', icon: Building2 },
-    { to: '/fees', label: 'Khoan thu', icon: Receipt },
-    { to: '/payments', label: 'Thanh toan', icon: CreditCard },
+    { to: '/', label: 'Tổng quan', icon: LayoutDashboard, end: true },
+    { to: '/apartments', label: 'Căn hộ', icon: Building2 },
+    { to: '/residents', label: 'Cư dân', icon: Users },
+    { to: '/fees', label: 'Khoản thu', icon: Receipt },
+    { to: '/payments', label: 'Thanh toán', icon: CreditCard },
   ];
 
   return (
@@ -69,11 +46,11 @@ function AppLayout({ auth, onLogout }) {
           </span>
           <div>
             <span>BlueMoon AMS</span>
-            <small>{auth.user?.fullName || auth.user?.username || 'Staff'}</small>
+            <small>{auth.user?.fullName || auth.user?.username || 'Nhân viên'}</small>
           </div>
         </div>
 
-        <nav className="nav-list" aria-label="Dieu huong chinh">
+        <nav className="nav-list" aria-label="Điều hướng chính">
           {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink className="nav-link" end={end} key={to} to={to}>
               <Icon size={18} aria-hidden="true" />
@@ -84,7 +61,7 @@ function AppLayout({ auth, onLogout }) {
 
         <button className="logout-button" onClick={onLogout} type="button">
           <LogOut size={18} aria-hidden="true" />
-          Dang xuat
+          Đăng xuất
         </button>
       </aside>
 
@@ -93,24 +70,8 @@ function AppLayout({ auth, onLogout }) {
           <Route element={<DashboardPage />} index />
           <Route element={<ApartmentsPage />} path="apartments" />
           <Route element={<ResidentsPage />} path="residents" />
-          <Route
-            element={
-              <PlaceholderPage
-                description="Module khoan thu se duoc hoan thien sau khi backend fee API san sang."
-                title="Quan ly khoan thu"
-              />
-            }
-            path="fees"
-          />
-          <Route
-            element={
-              <PlaceholderPage
-                description="Module thanh toan thuoc Sprint 3, hien de san vi tri dieu huong."
-                title="Quan ly thanh toan"
-              />
-            }
-            path="payments"
-          />
+          <Route element={<FeesPage />} path="fees" />
+          <Route element={<PaymentsPage />} path="payments" />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </section>

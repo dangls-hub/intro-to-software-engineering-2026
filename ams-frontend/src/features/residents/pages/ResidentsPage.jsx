@@ -1,31 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Edit3, Plus, RefreshCcw, Trash2, X } from 'lucide-react';
+import { Edit3, Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
 import { fetchApartments } from '../../apartments/api/apartmentsApi';
-import {
-  createResident,
-  deleteResident,
-  fetchResidents,
-  updateResident,
-} from '../api/residentsApi';
+import { createResident, deleteResident, fetchResidents, updateResident } from '../api/residentsApi';
 
 const emptyForm = {
-  fullName: '',
-  identityNumber: '',
-  phone: '',
-  dateOfBirth: '',
-  relationToOwner: '',
-  apartmentId: '',
-  status: 'ACTIVE',
+  fullName: '', identityNumber: '', phone: '', dateOfBirth: '',
+  relationToOwner: '', apartmentId: '', status: 'ACTIVE',
 };
 
-function getApartmentLabel(resident) {
-  return (
-    resident.apartmentCode ||
-    resident.apartment?.code ||
-    resident.household?.apartment?.code ||
-    resident.apartmentId ||
-    '-'
-  );
+const statusMap = {
+  ACTIVE: { label: 'Đang cư trú', cls: 'active' },
+  INACTIVE: { label: 'Ngừng cư trú', cls: 'inactive' },
+};
+
+function getAptLabel(r) {
+  return r.apartmentCode || r.apartment?.code || r.household?.apartment?.code || r.apartmentId || '—';
 }
 
 function ResidentsPage() {
@@ -33,236 +22,164 @@ function ResidentsPage() {
   const [apartments, setApartments] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  async function loadPageData() {
+  async function loadData() {
     setIsLoading(true);
     setError('');
-
-    const [residentsResult, apartmentsResult] = await Promise.allSettled([
-      fetchResidents(),
-      fetchApartments(),
-    ]);
-
-    if (residentsResult.status === 'fulfilled') {
-      setResidents(residentsResult.value);
-    } else {
-      setResidents([]);
-      setError(residentsResult.reason?.message || 'Khong tai duoc danh sach cu dan.');
-    }
-
-    if (apartmentsResult.status === 'fulfilled') {
-      setApartments(apartmentsResult.value);
-    }
-
+    const [rRes, aRes] = await Promise.allSettled([fetchResidents(), fetchApartments()]);
+    if (rRes.status === 'fulfilled') setResidents(rRes.value);
+    else { setResidents([]); setError(rRes.reason?.message || 'Không tải được danh sách cư dân.'); }
+    if (aRes.status === 'fulfilled') setApartments(aRes.value);
     setIsLoading(false);
   }
 
-  useEffect(() => {
-    loadPageData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
-  function updateField(event) {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
-  }
+  function updateField(e) { setForm((p) => ({ ...p, [e.target.name]: e.target.value })); }
 
-  function resetForm() {
-    setForm(emptyForm);
-    setEditingId(null);
-  }
+  function openCreate() { setForm(emptyForm); setEditingId(null); setShowModal(true); }
 
-  function startEdit(resident) {
-    setEditingId(resident.id);
+  function openEdit(r) {
+    setEditingId(r.id);
     setForm({
-      fullName: resident.fullName ?? '',
-      identityNumber: resident.identityNumber ?? '',
-      phone: resident.phone ?? '',
-      dateOfBirth: resident.dateOfBirth ?? '',
-      relationToOwner: resident.relationToOwner ?? '',
-      apartmentId: resident.apartmentId ?? resident.apartment?.id ?? '',
-      status: resident.status ?? 'ACTIVE',
+      fullName: r.fullName ?? '', identityNumber: r.identityNumber ?? '',
+      phone: r.phone ?? '', dateOfBirth: r.dateOfBirth ?? '',
+      relationToOwner: r.relationToOwner ?? '',
+      apartmentId: r.apartmentId ?? r.apartment?.id ?? '',
+      status: r.status ?? 'ACTIVE',
     });
+    setShowModal(true);
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setIsSubmitting(true);
-    setError('');
+  function closeModal() { setShowModal(false); setEditingId(null); setForm(emptyForm); }
 
-    const payload = {
-      ...form,
-      apartmentId: form.apartmentId === '' ? null : Number(form.apartmentId),
-    };
-
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setIsSubmitting(true); setError('');
+    const payload = { ...form, apartmentId: form.apartmentId === '' ? null : Number(form.apartmentId) };
     try {
-      if (editingId) {
-        await updateResident(editingId, payload);
-      } else {
-        await createResident(payload);
-      }
-
-      resetForm();
-      await loadPageData();
-    } catch (apiError) {
-      setError(apiError.message || 'Khong luu duoc cu dan.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (editingId) await updateResident(editingId, payload);
+      else await createResident(payload);
+      closeModal(); await loadData();
+    } catch (err) { setError(err.message || 'Không lưu được cư dân.'); }
+    finally { setIsSubmitting(false); }
   }
 
-  async function handleDelete(resident) {
-    const confirmed = window.confirm(`Xoa hoac vo hieu hoa cu dan ${resident.fullName}?`);
-    if (!confirmed) {
-      return;
-    }
-
+  async function handleDelete(r) {
+    if (!window.confirm(`Bạn có chắc muốn xóa cư dân ${r.fullName}?`)) return;
     setError('');
-
-    try {
-      await deleteResident(resident.id);
-      await loadPageData();
-    } catch (apiError) {
-      setError(apiError.message || 'Khong xoa duoc cu dan.');
-    }
+    try { await deleteResident(r.id); await loadData(); }
+    catch (err) { setError(err.message || 'Không xóa được cư dân.'); }
   }
+
+  const filtered = residents.filter((r) =>
+    (r.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (r.identityNumber || '').includes(search) ||
+    (r.phone || '').includes(search)
+  );
 
   return (
     <>
       <header className="page-header">
-        <div>
-          <p className="eyebrow">Resident</p>
-          <h1>Quan ly cu dan</h1>
+        <div><p className="eyebrow">Resident</p><h1>Quản lý cư dân</h1></div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="secondary-button" onClick={loadData} type="button"><RefreshCcw size={17} /> Tải lại</button>
+          <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Thêm cư dân</button>
         </div>
-        <button className="secondary-button" onClick={loadPageData} type="button">
-          <RefreshCcw size={17} aria-hidden="true" />
-          Tai lai
-        </button>
       </header>
 
-      {error ? <div className="alert error">{error}</div> : null}
+      {error && <div className="alert error">{error}</div>}
 
-      <section className="workspace-grid">
-        <form className="workspace-panel form-grid" onSubmit={handleSubmit}>
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Form</p>
-              <h2>{editingId ? 'Cap nhat cu dan' : 'Them cu dan'}</h2>
-            </div>
-            {editingId ? (
-              <button className="icon-button" onClick={resetForm} title="Huy sua" type="button">
-                <X size={17} aria-hidden="true" />
-              </button>
-            ) : null}
-          </div>
+      <section className="workspace-panel">
+        <div className="toolbar">
+          <input className="search-input" placeholder="Tìm kiếm theo họ tên, CCCD, SĐT..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <span className="count-badge">{filtered.length}</span>
+        </div>
 
-          <label>
-            Ho ten
-            <input name="fullName" onChange={updateField} required type="text" value={form.fullName} />
-          </label>
-
-          <label>
-            So dinh danh
-            <input name="identityNumber" onChange={updateField} type="text" value={form.identityNumber} />
-          </label>
-
-          <label>
-            So dien thoai
-            <input name="phone" onChange={updateField} type="tel" value={form.phone} />
-          </label>
-
-          <label>
-            Ngay sinh
-            <input name="dateOfBirth" onChange={updateField} type="date" value={form.dateOfBirth} />
-          </label>
-
-          <label>
-            Quan he voi chu ho
-            <input name="relationToOwner" onChange={updateField} type="text" value={form.relationToOwner} />
-          </label>
-
-          <label>
-            Can ho
-            <select name="apartmentId" onChange={updateField} value={form.apartmentId}>
-              <option value="">Chua gan</option>
-              {apartments.map((apartment) => (
-                <option key={apartment.id || apartment.code} value={apartment.id}>
-                  {apartment.code}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Trang thai
-            <select name="status" onChange={updateField} value={form.status}>
-              <option value="ACTIVE">Dang cu tru</option>
-              <option value="INACTIVE">Ngung cu tru</option>
-            </select>
-          </label>
-
-          <button className="primary-button" disabled={isSubmitting} type="submit">
-            <Plus size={17} aria-hidden="true" />
-            {isSubmitting ? 'Dang luu...' : editingId ? 'Luu thay doi' : 'Them cu dan'}
-          </button>
-        </form>
-
-        <section className="workspace-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Danh sach</p>
-              <h2>Cu dan</h2>
-            </div>
-            <span className="count-badge">{residents.length}</span>
-          </div>
-
-          {isLoading ? <p className="muted-text">Dang tai danh sach...</p> : null}
-
-          {!isLoading && residents.length === 0 ? (
-            <p className="muted-text">Chua co du lieu cu dan.</p>
-          ) : null}
-
+        {isLoading ? (
+          <div className="loading-center"><span className="spinner" /> Đang tải...</div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state"><Search size={48} /><p>Chưa có dữ liệu cư dân{search ? ' phù hợp' : ''}.</p></div>
+        ) : (
           <div className="table-wrap">
-            {residents.length > 0 ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Ho ten</th>
-                    <th>Dinh danh</th>
-                    <th>Dien thoai</th>
-                    <th>Can ho</th>
-                    <th>Trang thai</th>
-                    <th aria-label="Thao tac" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {residents.map((resident) => (
-                    <tr key={resident.id || resident.identityNumber || resident.fullName}>
-                      <td>{resident.fullName || '-'}</td>
-                      <td>{resident.identityNumber || '-'}</td>
-                      <td>{resident.phone || '-'}</td>
-                      <td>{getApartmentLabel(resident)}</td>
-                      <td>{resident.status || '-'}</td>
+            <table>
+              <thead>
+                <tr>
+                  <th>Họ tên</th>
+                  <th>Số định danh</th>
+                  <th>Điện thoại</th>
+                  <th>Căn hộ</th>
+                  <th>Quan hệ</th>
+                  <th>Trạng thái</th>
+                  <th aria-label="Thao tác" style={{ width: 100 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => {
+                  const st = statusMap[r.status] || { label: r.status || '—', cls: 'inactive' };
+                  return (
+                    <tr key={r.id || r.identityNumber}>
+                      <td style={{ fontWeight: 600 }}>{r.fullName || '—'}</td>
+                      <td>{r.identityNumber || '—'}</td>
+                      <td>{r.phone || '—'}</td>
+                      <td>{getAptLabel(r)}</td>
+                      <td>{r.relationToOwner || '—'}</td>
+                      <td><span className={`status-badge ${st.cls}`}>{st.label}</span></td>
                       <td>
                         <div className="row-actions">
-                          <button className="icon-button" onClick={() => startEdit(resident)} title="Sua" type="button">
-                            <Edit3 size={16} aria-hidden="true" />
-                          </button>
-                          <button className="icon-button danger" onClick={() => handleDelete(resident)} title="Xoa" type="button">
-                            <Trash2 size={16} aria-hidden="true" />
-                          </button>
+                          <button className="icon-button" onClick={() => openEdit(r)} title="Sửa"><Edit3 size={15} /></button>
+                          <button className="icon-button danger" onClick={() => handleDelete(r)} title="Xóa"><Trash2 size={15} /></button>
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : null}
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </section>
+        )}
       </section>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="modal-panel">
+            <div className="modal-header">
+              <h2>{editingId ? 'Cập nhật cư dân' : 'Thêm cư dân mới'}</h2>
+              <button className="icon-button" onClick={closeModal}><X size={18} /></button>
+            </div>
+            <form className="form-grid" onSubmit={handleSubmit}>
+              <label>Họ tên <input name="fullName" onChange={updateField} required value={form.fullName} placeholder="Nguyễn Văn A" /></label>
+              <label>Số định danh (CCCD) <input name="identityNumber" onChange={updateField} value={form.identityNumber} placeholder="001234567890" /></label>
+              <label>Số điện thoại <input name="phone" onChange={updateField} type="tel" value={form.phone} placeholder="0901234567" /></label>
+              <label>Ngày sinh <input name="dateOfBirth" onChange={updateField} type="date" value={form.dateOfBirth} /></label>
+              <label>Quan hệ với chủ hộ <input name="relationToOwner" onChange={updateField} value={form.relationToOwner} placeholder="Chủ hộ / Vợ / Con..." /></label>
+              <label>Căn hộ
+                <select name="apartmentId" onChange={updateField} value={form.apartmentId}>
+                  <option value="">— Chưa gán —</option>
+                  {apartments.map((a) => <option key={a.id || a.code} value={a.id}>{a.code}</option>)}
+                </select>
+              </label>
+              <label>Trạng thái
+                <select name="status" onChange={updateField} value={form.status}>
+                  <option value="ACTIVE">Đang cư trú</option>
+                  <option value="INACTIVE">Ngừng cư trú</option>
+                </select>
+              </label>
+              <div className="modal-footer" style={{ margin: 0, padding: 0, border: 'none' }}>
+                <button className="secondary-button" onClick={closeModal} type="button">Hủy</button>
+                <button className="primary-button" disabled={isSubmitting} type="submit">
+                  {isSubmitting ? <><span className="spinner" /> Đang lưu...</> : editingId ? 'Lưu thay đổi' : 'Thêm cư dân'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
