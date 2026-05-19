@@ -1,45 +1,40 @@
 import { useState } from 'react';
-import { Building2, LogIn } from 'lucide-react';
+import { Building2, Eye, EyeOff, LogIn } from 'lucide-react';
 import { login } from '../api/authApi';
 
-const initialForm = {
-  username: '',
-  password: '',
-};
+const initialForm = { username: '', password: '' };
 
 function LoginPage({ onLogin }) {
   const [form, setForm] = useState(initialForm);
+  const [showPw, setShowPw] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  function updateField(event) {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+  function updateField(e) {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  async function handleSubmit(e) {
+    e.preventDefault();
     setIsSubmitting(true);
     setError('');
 
     try {
-      const authPayload = await login(form);
-      const token = authPayload?.token || authPayload?.accessToken;
-
-      if (!token) {
-        throw new Error('Login response does not include a token.');
-      }
+      const res = await login(form);
+      const token = res?.token || res?.accessToken;
+      if (!token) throw new Error('Phản hồi đăng nhập không chứa token.');
 
       onLogin({
         token,
-        user: authPayload?.user || {
+        user: res?.user || {
           username: form.username,
-          fullName: authPayload?.fullName,
-          role: authPayload?.role,
+          fullName: res?.fullName,
+          role: res?.role,
         },
       });
-    } catch (apiError) {
-      setError(apiError.message || 'Dang nhap that bai.');
+    } catch (err) {
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -54,19 +49,21 @@ function LoginPage({ onLogin }) {
           </span>
           <div>
             <p className="eyebrow">BlueMoon AMS</p>
-            <h1 id="login-title">Dang nhap he thong</h1>
+            <h1 id="login-title">Đăng nhập hệ thống</h1>
           </div>
         </div>
 
-        {error ? <div className="alert error">{error}</div> : null}
+        {error && <div className="alert error">{error}</div>}
 
         <form className="form-grid" onSubmit={handleSubmit}>
           <label>
-            Ten dang nhap
+            Tên đăng nhập
             <input
               autoComplete="username"
+              id="login-username"
               name="username"
               onChange={updateField}
+              placeholder="Nhập tên đăng nhập"
               required
               type="text"
               value={form.username}
@@ -74,20 +71,58 @@ function LoginPage({ onLogin }) {
           </label>
 
           <label>
-            Mat khau
-            <input
-              autoComplete="current-password"
-              name="password"
-              onChange={updateField}
-              required
-              type="password"
-              value={form.password}
-            />
+            Mật khẩu
+            <div style={{ position: 'relative' }}>
+              <input
+                autoComplete="current-password"
+                id="login-password"
+                name="password"
+                onChange={updateField}
+                placeholder="Nhập mật khẩu"
+                required
+                type={showPw ? 'text' : 'password'}
+                value={form.password}
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  padding: 6,
+                  cursor: 'pointer',
+                }}
+                aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </label>
 
-          <button className="primary-button full-width" disabled={isSubmitting} type="submit">
-            <LogIn size={18} aria-hidden="true" />
-            {isSubmitting ? 'Dang dang nhap...' : 'Dang nhap'}
+          <button
+            className="primary-button full-width"
+            disabled={isSubmitting}
+            id="login-submit"
+            type="submit"
+            style={{ marginTop: 8 }}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="spinner" />
+                Đang đăng nhập...
+              </>
+            ) : (
+              <>
+                <LogIn size={18} aria-hidden="true" />
+                Đăng nhập
+              </>
+            )}
           </button>
         </form>
       </section>

@@ -1,19 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Building2, CreditCard, Home, RefreshCcw, Users } from 'lucide-react';
+import { Building2, CreditCard, Home, Receipt, RefreshCcw, Users, Activity } from 'lucide-react';
 import { apiClient } from '../../../lib/apiClient';
 import { fetchApartments } from '../../apartments/api/apartmentsApi';
 import { fetchResidents } from '../../residents/api/residentsApi';
 
-const initialMetrics = {
-  apartments: 0,
-  residents: 0,
-  fees: 0,
-  payments: 0,
-};
+const initialMetrics = { apartments: 0, residents: 0, fees: 0, payments: 0 };
 
 function DashboardPage() {
   const [metrics, setMetrics] = useState(initialMetrics);
-  const [health, setHealth] = useState('Chua kiem tra');
+  const [health, setHealth] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -21,42 +16,34 @@ function DashboardPage() {
     setIsLoading(true);
     setError('');
 
-    const [healthResult, apartmentsResult, residentsResult] = await Promise.allSettled([
+    const [healthRes, aptsRes, resRes] = await Promise.allSettled([
       apiClient('/health', { token: null }),
       fetchApartments(),
       fetchResidents(),
     ]);
 
-    if (healthResult.status === 'fulfilled') {
-      setHealth(typeof healthResult.value === 'string' ? healthResult.value : 'Backend san sang');
-    } else {
-      setHealth('Backend chua san sang');
-    }
+    setHealth(healthRes.status === 'fulfilled');
 
     setMetrics({
-      apartments: apartmentsResult.status === 'fulfilled' ? apartmentsResult.value.length : 0,
-      residents: residentsResult.status === 'fulfilled' ? residentsResult.value.length : 0,
+      apartments: aptsRes.status === 'fulfilled' ? aptsRes.value.length : 0,
+      residents: resRes.status === 'fulfilled' ? resRes.value.length : 0,
       fees: 0,
       payments: 0,
     });
 
-    const firstError = [apartmentsResult, residentsResult].find((result) => result.status === 'rejected');
-    if (firstError) {
-      setError(firstError.reason?.message || 'Khong tai duoc du lieu dashboard.');
-    }
+    const failed = [aptsRes, resRes].find((r) => r.status === 'rejected');
+    if (failed) setError(failed.reason?.message || 'Không tải được dữ liệu.');
 
     setIsLoading(false);
   }
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useEffect(() => { loadDashboard(); }, []);
 
-  const overviewItems = [
-    { label: 'Can ho', value: metrics.apartments, icon: Home },
-    { label: 'Cu dan', value: metrics.residents, icon: Users },
-    { label: 'Khoan thu', value: metrics.fees, icon: Building2 },
-    { label: 'Thanh toan', value: metrics.payments, icon: CreditCard },
+  const cards = [
+    { label: 'Căn hộ', value: metrics.apartments, icon: Home, color: 'blue' },
+    { label: 'Cư dân', value: metrics.residents, icon: Users, color: 'green' },
+    { label: 'Khoản thu', value: metrics.fees, icon: Receipt, color: 'purple' },
+    { label: 'Thanh toán', value: metrics.payments, icon: CreditCard, color: 'amber' },
   ];
 
   return (
@@ -64,23 +51,25 @@ function DashboardPage() {
       <header className="page-header">
         <div>
           <p className="eyebrow">Apartment Management System</p>
-          <h1>Bang dieu khien</h1>
+          <h1>Bảng điều khiển</h1>
         </div>
         <button className="secondary-button" onClick={loadDashboard} type="button">
           <RefreshCcw size={17} aria-hidden="true" />
-          Tai lai
+          Tải lại
         </button>
       </header>
 
-      {error ? <div className="alert warning">{error}</div> : null}
+      {error && <div className="alert warning">{error}</div>}
 
-      <section className="metric-grid" aria-label="Thong ke nhanh" aria-busy={isLoading}>
-        {overviewItems.map(({ label, value, icon: Icon }) => (
+      <section className="metric-grid" aria-label="Thống kê nhanh" aria-busy={isLoading}>
+        {cards.map(({ label, value, icon: Icon, color }) => (
           <article className="metric-card" key={label}>
-            <Icon size={22} aria-hidden="true" />
+            <div className={`metric-icon ${color}`}>
+              <Icon size={24} aria-hidden="true" />
+            </div>
             <div>
-              <span>{label}</span>
-              <strong>{isLoading ? '-' : value}</strong>
+              <div className="metric-label">{label}</div>
+              <div className="metric-value">{isLoading ? '—' : value}</div>
             </div>
           </article>
         ))}
@@ -89,11 +78,20 @@ function DashboardPage() {
       <section className="workspace-panel">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Trang thai he thong</p>
-            <h2>Ket noi backend</h2>
+            <p className="eyebrow">Trạng thái hệ thống</p>
+            <h2>Kết nối Backend</h2>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Activity size={18} aria-hidden="true" style={{ color: health ? 'var(--success)' : 'var(--danger)' }} />
+            <span className={`status-badge ${health ? 'active' : 'inactive'}`}>
+              {health === null ? 'Đang kiểm tra...' : health ? 'Backend sẵn sàng' : 'Không kết nối được'}
+            </span>
           </div>
         </div>
-        <p className="muted-text">{health}</p>
+        <p className="muted-text">
+          Hệ thống quản lý chung cư BlueMoon – quản lý căn hộ, cư dân, khoản thu và thanh toán.
+          Dữ liệu được đồng bộ từ backend Spring Boot và lưu trữ trên MySQL.
+        </p>
       </section>
     </>
   );
