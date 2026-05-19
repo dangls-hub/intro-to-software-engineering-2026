@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    # Docker Compose đang expose MySQL ra port 3307 trên máy host.
+    url: jdbc:mysql://localhost:3307/bluemoon_ams?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh
+    username: root
+    password: NhapMonCongNghePhanMem
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
