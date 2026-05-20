@@ -3,11 +3,15 @@ package com.bluemoon.ams.module.auth.controller;
 import com.bluemoon.ams.common.response.ApiResponse;
 import com.bluemoon.ams.module.auth.dto.LoginRequest;
 import com.bluemoon.ams.module.auth.dto.LoginResponse;
+import com.bluemoon.ams.module.auth.dto.UserInfoResponse;
+import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,13 +32,31 @@ public class AuthController {
     }
 
     /**
-     * API lấy thông tin user hiện tại (cần token)
+     * API lấy thông tin user hiện tại (cần token hợp lệ)
      * GET /api/v1/auth/me
-     * Note: Sẽ được hoàn thành khi Spring Security được cấu hình
+     * Header: Authorization: Bearer <token>
      */
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return ResponseEntity.ok("Chức năng này sẽ được hoàn thành sau khi Spring Security được cấu hình");
+    public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser() {
+        // Lấy authentication từ SecurityContext
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Không được phép truy cập");
+        }
+
+        // Lấy username từ authentication
+        String username = authentication.getName();
+        
+        // Lấy thông tin user từ database
+        User user = authService.getUserByUsername(username);
+
+        UserInfoResponse response = UserInfoResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .role(user.getRole().toString())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
     }
 }
