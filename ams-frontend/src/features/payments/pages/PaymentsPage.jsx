@@ -8,7 +8,8 @@ const emptyForm = { feeId: '', amount: '', method: 'CASH', note: '' };
 const methodMap = { CASH: 'Tiền mặt', TRANSFER: 'Chuyển khoản', QR: 'QR Code' };
 const statusCls = { PAID: 'paid', PENDING: 'pending' };
 
-function PaymentsPage() {
+function PaymentsPage({ role }) {
+  const isResident = role === 'RESIDENT';
   const [payments, setPayments] = useState([]);
   const [fees, setFees] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -65,10 +66,10 @@ function PaymentsPage() {
   return (
     <>
       <header className="page-header">
-        <div><p className="eyebrow">Payment</p><h1>Quản lý thanh toán</h1></div>
+        <div><p className="eyebrow">{isResident ? 'My Payments' : 'Payment'}</p><h1>{isResident ? 'Thanh toán của tôi' : 'Quản lý thanh toán'}</h1></div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="secondary-button" onClick={loadData} type="button"><RefreshCcw size={17} /> Tải lại</button>
-          <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Ghi nhận thanh toán</button>
+          {!isResident && <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Ghi nhận thanh toán</button>}
         </div>
       </header>
 
@@ -95,7 +96,7 @@ function PaymentsPage() {
                   <th>Ngày thanh toán</th>
                   <th>Ghi chú</th>
                   <th>Trạng thái</th>
-                  <th aria-label="Thao tác" style={{ width: 60 }} />
+                  {!isResident && <th aria-label="Thao tác" style={{ width: 60 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -107,11 +108,13 @@ function PaymentsPage() {
                     <td>{p.paymentDate || p.createdAt || '—'}</td>
                     <td>{p.note || '—'}</td>
                     <td><span className={`status-badge ${statusCls[p.status] || 'active'}`}>{p.status === 'PAID' ? 'Đã thanh toán' : 'Đã ghi nhận'}</span></td>
+                    {!isResident && (
                     <td>
                       <div className="row-actions">
                         <button className="icon-button danger" onClick={() => handleDelete(p)} title="Xóa"><Trash2 size={15} /></button>
                       </div>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

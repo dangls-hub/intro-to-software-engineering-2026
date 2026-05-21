@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Building2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { login } from '../api/authApi';
+import { Link } from 'react-router-dom';
 
 const initialForm = { username: '', password: '' };
 
@@ -105,12 +106,18 @@ function LoginPage({ onLogin }) {
             </div>
           </label>
 
+          <div style={{ textAlign: 'right', marginTop: -8 }}>
+            <Link to="/forgot-password" className="auth-link" style={{ fontSize: '0.85rem' }}>
+              Quên mật khẩu?
+            </Link>
+          </div>
+
           <button
             className="primary-button full-width"
             disabled={isSubmitting}
             id="login-submit"
             type="submit"
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 4 }}
           >
             {isSubmitting ? (
               <>
@@ -126,10 +133,17 @@ function LoginPage({ onLogin }) {
           </button>
         </form>
 
+        <p className="auth-footer-text">
+          Chưa có tài khoản?{' '}
+          <Link to="/register" className="auth-link">
+            Đăng ký ngay
+          </Link>
+        </p>
+
         <p
           className="muted-text"
           style={{
-            marginTop: 20,
+            marginTop: 12,
             textAlign: 'center',
             fontSize: '0.82rem',
             display: 'flex',

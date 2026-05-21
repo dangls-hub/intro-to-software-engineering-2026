@@ -9,12 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoginResponse {
-    private String token;              // JWT token (do Đỗ Hải Đăng cung cấp qua JwtUtil)
+public class RegisterResponse {
     private Long userId;
     private String username;
     private String email;
     private String fullName;
-    private String role;               // ADMIN, STAFF hoặc RESIDENT
+    private String role;
     private String message;
 }

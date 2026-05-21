@@ -24,9 +24,21 @@ public class User {
     @Column(nullable = false)
     private String password;  // Lưu dưới dạng hash (BCrypt)
 
+    @Column(unique = true, nullable = false, length = 150)
+    private String email;
+
+    @Column(name = "full_name", length = 200)
+    private String fullName;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Column(name = "reset_token", length = 64)
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

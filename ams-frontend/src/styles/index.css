@@ -962,3 +962,84 @@ code {
     padding: 20px;
   }
 }
+
+/* ── Auth Footer & Links ─────────────────────── */
+
+.auth-footer-text {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.auth-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color var(--duration) var(--ease);
+}
+
+.auth-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ── Role Tag ────────────────────────────────── */
+
+.role-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-top: 4px;
+}
+
+.role-tag[data-role="ADMIN"] {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+}
+
+.role-tag[data-role="STAFF"] {
+  background: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+}
+
+.role-tag[data-role="RESIDENT"] {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+/* ── Resident Info Grid ──────────────────────── */
+
+.resident-info-grid {
+  display: grid;
+  gap: 0;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.info-value {
+  color: var(--text-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+

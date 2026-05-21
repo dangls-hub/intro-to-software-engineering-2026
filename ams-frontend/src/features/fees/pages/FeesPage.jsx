@@ -16,7 +16,8 @@ const statusMap = {
   OVERDUE: { label: 'Quá hạn', cls: 'overdue' },
 };
 
-function FeesPage() {
+function FeesPage({ role }) {
+  const isResident = role === 'RESIDENT';
   const [fees, setFees] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -87,10 +88,10 @@ function FeesPage() {
   return (
     <>
       <header className="page-header">
-        <div><p className="eyebrow">Fee</p><h1>Quản lý khoản thu</h1></div>
+        <div><p className="eyebrow">{isResident ? 'My Fees' : 'Fee'}</p><h1>{isResident ? 'Khoản thu của tôi' : 'Quản lý khoản thu'}</h1></div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="secondary-button" onClick={loadData} type="button"><RefreshCcw size={17} /> Tải lại</button>
-          <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Tạo khoản thu</button>
+          {!isResident && <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Tạo khoản thu</button>}
         </div>
       </header>
 
@@ -117,7 +118,7 @@ function FeesPage() {
                   <th>Căn hộ</th>
                   <th>Hạn nộp</th>
                   <th>Trạng thái</th>
-                  <th aria-label="Thao tác" style={{ width: 100 }} />
+                  {!isResident && <th aria-label="Thao tác" style={{ width: 100 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -131,12 +132,14 @@ function FeesPage() {
                       <td>{f.apartment?.code || f.apartmentId || '—'}</td>
                       <td>{f.dueDate || '—'}</td>
                       <td><span className={`status-badge ${st.cls}`}>{st.label}</span></td>
+                      {!isResident && (
                       <td>
                         <div className="row-actions">
                           <button className="icon-button" onClick={() => openEdit(f)} title="Sửa"><Edit3 size={15} /></button>
                           <button className="icon-button danger" onClick={() => handleDelete(f)} title="Xóa"><Trash2 size={15} /></button>
                         </div>
                       </td>
+                      )}
                     </tr>
                   );
                 })}

@@ -1,7 +1,7 @@
 package com.bluemoon.ams.module.auth.service;
 
-import com.bluemoon.ams.module.auth.dto.LoginRequest;
-import com.bluemoon.ams.module.auth.dto.LoginResponse;
+import com.bluemoon.ams.module.auth.dto.*;
+import com.bluemoon.ams.module.auth.entity.Role;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
 import com.bluemoon.ams.common.security.JwtUtil;
@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,8 @@ public class AuthService {
                     .token(token)
                     .userId(user.getId())
                     .username(user.getUsername())
+                    .email(user.getEmail())
+                    .fullName(user.getFullName())
                     .role(user.getRole().toString())
                     .message("Đăng nhập thành công")
                     .build();
@@ -46,6 +51,103 @@ public class AuthService {
             log.error("Login error: {}", e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Đăng ký tài khoản cư dân mới
+     */
+    public RegisterResponse register(RegisterRequest request) {
+        // Kiểm tra username đã tồn tại
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Tên đăng nhập đã được sử dụng");
+        }
+
+        // Kiểm tra email đã tồn tại
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email đã được sử dụng");
+        }
+
+        // Tạo user mới với role RESIDENT
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .role(Role.RESIDENT)
+                .build();
+
+        User savedUser = userRepository.save(user);
+        log.info("New resident registered: {}", savedUser.getUsername());
+
+        return RegisterResponse.builder()
+                .userId(savedUser.getId())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .fullName(savedUser.getFullName())
+                .role(savedUser.getRole().toString())
+                .message("Đăng ký thành công")
+                .build();
+    }
+
+    /**
+     * Yêu cầu đặt lại mật khẩu — tạo reset token
+     * Trong môi trường production sẽ gửi email, ở đây trả token trực tiếp để demo
+     */
+    public String forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
+
+        // Tạo reset token (UUID ngắn gọn)
+        String resetToken = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        user.setResetToken(resetToken);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30)); // Hết hạn sau 30 phút
+        userRepository.save(user);
+
+        log.info("Password reset token generated for user: {}", user.getUsername());
+
+        // Trong production: gửi email chứa reset token
+        // Ở đây trả về token trực tiếp cho mục đích demo
+        return resetToken;
+    }
+
+    /**
+     * Đặt lại mật khẩu bằng reset token
+     */
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByResetToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
+
+        // Kiểm tra token hết hạn
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.");
+        }
+
+        // Đặt lại mật khẩu
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+
+        log.info("Password reset successful for user: {}", user.getUsername());
+    }
+
+    /**
+     * Đổi mật khẩu (user đã đăng nhập)
+     */
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        // Kiểm tra mật khẩu hiện tại
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Mật khẩu hiện tại không đúng");
+        }
+
+        // Đặt mật khẩu mới
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Password changed for user: {}", user.getUsername());
     }
 
     /**
