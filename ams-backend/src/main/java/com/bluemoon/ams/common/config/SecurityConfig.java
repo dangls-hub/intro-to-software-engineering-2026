@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,9 +16,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Cấu hình Spring Security: route công khai, route bảo vệ, JWT filter.
+ * Enable role-based authorization cho các endpoint.
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -37,14 +40,13 @@ public class SecurityConfig {
 
                 // Cấu hình quyền truy cập
                 .authorizeHttpRequests(auth -> auth
-                        // Route công khai
+                        // Route công khai (không cần token)
                         .requestMatchers("/api/v1/health").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        // TODO: Khi module Auth (Hoàng Gia Huy) hoàn thành,
-                        // xóa dòng dưới và uncomment .anyRequest().authenticated()
-                        .requestMatchers("/api/v1/**").permitAll()
-                        // .anyRequest().authenticated()
+                        
+                        // Route bảo vệ - yêu cầu JWT token
+                        .anyRequest().authenticated()
                 )
 
                 // Stateless — không dùng session
