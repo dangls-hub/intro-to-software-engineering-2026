@@ -1,6 +1,6 @@
 package com.bluemoon.ams.module.apartment.entity;
 
 public enum ApartmentStatus {
-    ACTIVE,      // Căn hộ đang hoạt động
-    INACTIVE     // Căn hộ bị vô hiệu hóa
+    AVAILABLE,   // Căn hộ có sẵn, chưa có cư dân
+    OCCUPIED     // Căn hộ đã có cư dân
 }

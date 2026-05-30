@@ -35,12 +35,12 @@ public class ApartmentMapper {
         if (request == null) {
             return null;
         }
-        ApartmentStatus status = ApartmentStatus.ACTIVE;
+        ApartmentStatus status = ApartmentStatus.AVAILABLE;
         if (request.getStatus() != null) {
             try {
                 status = ApartmentStatus.valueOf(request.getStatus().toUpperCase());
             } catch (IllegalArgumentException e) {
-                status = ApartmentStatus.ACTIVE;
+                status = ApartmentStatus.AVAILABLE;
             }
         }
         
@@ -60,6 +60,7 @@ public class ApartmentMapper {
         if (request == null || apartment == null) {
             return;
         }
+        apartment.setRoomNumber(request.getRoomNumber());
         apartment.setFloor(request.getFloor());
         apartment.setArea(request.getArea());
         apartment.setDescription(request.getDescription());
@@ -68,7 +69,7 @@ public class ApartmentMapper {
             try {
                 apartment.setStatus(ApartmentStatus.valueOf(request.getStatus().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                apartment.setStatus(ApartmentStatus.ACTIVE);
+                apartment.setStatus(ApartmentStatus.AVAILABLE);
             }
         }
     }

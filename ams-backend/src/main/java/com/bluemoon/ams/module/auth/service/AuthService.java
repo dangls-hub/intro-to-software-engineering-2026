@@ -4,11 +4,14 @@ import com.bluemoon.ams.module.auth.dto.LoginRequest;
 import com.bluemoon.ams.module.auth.dto.LoginResponse;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
+import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,19 +24,25 @@ public class AuthService {
     /**
      * Xác thực user và trả JWT token
      */
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         try {
             // Tìm user theo username
             User user = userRepository.findByUsername(request.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                    .orElseThrow(() -> {
+                        log.warn("Login attempt with non-existent username: {}", request.getUsername());
+                        return new ResourceNotFoundException("Người dùng không tồn tại");
+                    });
 
             // Kiểm tra mật khẩu
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                throw new RuntimeException("Mật khẩu không đúng");
+                log.warn("Failed login attempt for user: {}", request.getUsername());
+                throw new BadCredentialsException("Mật khẩu không đúng");
             }
 
             // Tạo JWT token
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+            log.info("Successful login for user: {}", request.getUsername());
 
             return LoginResponse.builder()
                     .token(token)
@@ -53,7 +62,7 @@ public class AuthService {
      */
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
     }
 
     /**
@@ -61,6 +70,6 @@ public class AuthService {
      */
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
     }
 }
