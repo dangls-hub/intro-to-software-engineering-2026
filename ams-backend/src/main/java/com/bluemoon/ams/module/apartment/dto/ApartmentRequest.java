@@ -26,5 +26,5 @@ public class ApartmentRequest {
 
     private String description;
 
-    private String status;  // ACTIVE hoặc INACTIVE
+    private String status;  // AVAILABLE, OCCUPIED, hoặc INACTIVE
 }
