@@ -1,17 +1,14 @@
-import { useEffect, useState } from 'react';
 import {
-  Building2,
   CreditCard,
   Home,
   Receipt,
-  RefreshCcw,
-  TrendingUp,
   Clock,
   User,
 } from 'lucide-react';
+import { useAuth } from '../../../store/authStore';
 
-function ResidentDashboardPage({ auth }) {
-  const user = auth?.user || {};
+function ResidentDashboardPage() {
+  const { user } = useAuth();
   const now = new Date();
   const greeting =
     now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
@@ -24,7 +21,7 @@ function ResidentDashboardPage({ auth }) {
             <Home size={14} style={{ verticalAlign: '-2px', marginRight: 6 }} />
             Trang cư dân
           </p>
-          <h1>{greeting}, {user.fullName || user.username || 'Cư dân'} 👋</h1>
+          <h1>{greeting}, {user?.fullName || user?.username || 'Cư dân'} 👋</h1>
         </div>
       </header>
 
@@ -35,7 +32,7 @@ function ResidentDashboardPage({ auth }) {
           </div>
           <div>
             <div className="metric-label">Tài khoản</div>
-            <div className="metric-value" style={{ fontSize: '1.1rem' }}>{user.username || '—'}</div>
+            <div className="metric-value" style={{ fontSize: '1.1rem' }}>{user?.username || '—'}</div>
           </div>
         </article>
 
@@ -71,15 +68,15 @@ function ResidentDashboardPage({ auth }) {
         <div className="resident-info-grid">
           <div className="info-row">
             <span className="info-label">Họ và tên</span>
-            <span className="info-value">{user.fullName || '—'}</span>
+            <span className="info-value">{user?.fullName || '—'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">Tên đăng nhập</span>
-            <span className="info-value">{user.username || '—'}</span>
+            <span className="info-value">{user?.username || '—'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">Email</span>
-            <span className="info-value">{user.email || '—'}</span>
+            <span className="info-value">{user?.email || '—'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">Vai trò</span>

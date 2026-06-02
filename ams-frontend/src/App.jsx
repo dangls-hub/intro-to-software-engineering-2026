@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   BrowserRouter,
   NavLink,
@@ -13,34 +12,20 @@ import {
   LayoutDashboard,
   LogOut,
   Receipt,
-  KeyRound,
   Users,
 } from 'lucide-react';
+
+import { AuthProvider, useAuth } from './store/authStore';
+import { ToastProvider } from './components/ui/Toast';
+import { PrivateRoute, PublicRoute } from './routes/AppRouter';
+
 import LoginPage from './features/auth/pages/LoginPage';
-import RegisterPage from './features/auth/pages/RegisterPage';
-import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import ResidentsPage from './features/residents/pages/ResidentsPage';
 import FeesPage from './features/fees/pages/FeesPage';
 import PaymentsPage from './features/payments/pages/PaymentsPage';
 import ResidentDashboardPage from './features/dashboard/pages/ResidentDashboardPage';
-import { clearAuthToken, getAuthToken, setAuthToken } from './lib/apiClient';
-
-const AUTH_USER_KEY = 'bluemoon_auth_user';
-
-function getInitialAuth() {
-  const token = getAuthToken();
-  if (!token) return null;
-
-  try {
-    const savedUser = localStorage.getItem(AUTH_USER_KEY);
-    const user = savedUser ? JSON.parse(savedUser) : { username: 'staff', role: 'STAFF' };
-    return { token, user };
-  } catch {
-    return { token, user: { username: 'staff', role: 'STAFF' } };
-  }
-}
 
 /** Danh sách nav items cho ADMIN và STAFF */
 const adminStaffNavItems = [
@@ -58,11 +43,12 @@ const residentNavItems = [
   { to: '/my-payments', label: 'Thanh toán', icon: CreditCard },
 ];
 
-function AppLayout({ auth, onLogout }) {
-  const role = auth.user?.role || 'STAFF';
+function AppLayout() {
+  const { user, logout } = useAuth();
+  const role = user?.role || 'STAFF';
   const isResident = role === 'RESIDENT';
   const navItems = isResident ? residentNavItems : adminStaffNavItems;
-  const displayName = auth.user?.fullName || auth.user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
+  const displayName = user?.fullName || user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
 
   return (
     <main className="app-shell">
@@ -90,7 +76,7 @@ function AppLayout({ auth, onLogout }) {
           ))}
         </nav>
 
-        <button className="logout-button" onClick={onLogout} type="button">
+        <button className="logout-button" onClick={logout} type="button">
           <LogOut size={18} aria-hidden="true" />
           Đăng xuất
         </button>
@@ -99,7 +85,7 @@ function AppLayout({ auth, onLogout }) {
       <section className="content">
         {isResident ? (
           <Routes>
-            <Route element={<ResidentDashboardPage auth={auth} />} index />
+            <Route element={<ResidentDashboardPage />} index />
             <Route element={<FeesPage role={role} />} path="my-fees" />
             <Route element={<PaymentsPage role={role} />} path="my-payments" />
             <Route element={<Navigate replace to="/" />} path="*" />
@@ -119,43 +105,37 @@ function AppLayout({ auth, onLogout }) {
   );
 }
 
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+        path="/login"
+      />
+      <Route
+        element={
+          <PrivateRoute>
+            <AppLayout />
+          </PrivateRoute>
+        }
+        path="/*"
+      />
+    </Routes>
+  );
+}
+
 function App() {
-  const [auth, setAuth] = useState(getInitialAuth);
-
-  function handleLogin(authPayload) {
-    setAuthToken(authPayload.token);
-    // Lưu thông tin user vào localStorage
-    const user = authPayload.user || {};
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-    setAuth(authPayload);
-  }
-
-  function handleLogout() {
-    clearAuthToken();
-    localStorage.removeItem(AUTH_USER_KEY);
-    setAuth(null);
-  }
-
   return (
     <BrowserRouter>
-      <Routes>
-        <Route
-          element={auth ? <Navigate replace to="/" /> : <LoginPage onLogin={handleLogin} />}
-          path="/login"
-        />
-        <Route
-          element={auth ? <Navigate replace to="/" /> : <RegisterPage />}
-          path="/register"
-        />
-        <Route
-          element={auth ? <Navigate replace to="/" /> : <ForgotPasswordPage />}
-          path="/forgot-password"
-        />
-        <Route
-          element={auth ? <AppLayout auth={auth} onLogout={handleLogout} /> : <Navigate replace to="/login" />}
-          path="/*"
-        />
-      </Routes>
+      <AuthProvider>
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

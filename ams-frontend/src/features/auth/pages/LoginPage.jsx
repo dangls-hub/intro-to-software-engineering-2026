@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Building2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
-import { login } from '../api/authApi';
-import { Link } from 'react-router-dom';
+import { login as loginApi } from '../api/authApi';
+import { useAuth } from '../../../store/authStore';
+import { useToast } from '../../../components/ui/Toast';
 
 const initialForm = { username: '', password: '' };
 
-function LoginPage({ onLogin }) {
+function LoginPage() {
+  const { login } = useAuth();
+  const showToast = useToast();
   const [form, setForm] = useState(initialForm);
   const [showPw, setShowPw] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,11 +25,11 @@ function LoginPage({ onLogin }) {
     setError('');
 
     try {
-      const res = await login(form);
+      const res = await loginApi(form);
       const token = res?.token || res?.accessToken;
       if (!token) throw new Error('Phản hồi đăng nhập không chứa token.');
 
-      onLogin({
+      login({
         token,
         user: res?.user || {
           username: form.username,
@@ -34,8 +37,12 @@ function LoginPage({ onLogin }) {
           role: res?.role,
         },
       });
+
+      showToast('Đăng nhập thành công!', 'success');
     } catch (err) {
-      setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+      const message = err.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -106,12 +113,6 @@ function LoginPage({ onLogin }) {
             </div>
           </label>
 
-          <div style={{ textAlign: 'right', marginTop: -8 }}>
-            <Link to="/forgot-password" className="auth-link" style={{ fontSize: '0.85rem' }}>
-              Quên mật khẩu?
-            </Link>
-          </div>
-
           <button
             className="primary-button full-width"
             disabled={isSubmitting}
@@ -133,17 +134,10 @@ function LoginPage({ onLogin }) {
           </button>
         </form>
 
-        <p className="auth-footer-text">
-          Chưa có tài khoản?{' '}
-          <Link to="/register" className="auth-link">
-            Đăng ký ngay
-          </Link>
-        </p>
-
         <p
           className="muted-text"
           style={{
-            marginTop: 12,
+            marginTop: 20,
             textAlign: 'center',
             fontSize: '0.82rem',
             display: 'flex',

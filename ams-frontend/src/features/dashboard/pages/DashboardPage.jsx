@@ -11,8 +11,12 @@ import {
   Clock,
 } from 'lucide-react';
 import { apiClient } from '../../../lib/apiClient';
+import { fetchDashboardStats } from '../api/dashboardApi';
 import { fetchApartments } from '../../apartments/api/apartmentsApi';
 import { fetchResidents } from '../../residents/api/residentsApi';
+import { fetchFees } from '../../fees/api/feesApi';
+import { fetchPayments } from '../../payments/api/paymentsApi';
+import { useToast } from '../../../components/ui/Toast';
 
 const initialMetrics = { apartments: 0, residents: 0, fees: 0, payments: 0 };
 
@@ -21,28 +25,53 @@ function DashboardPage() {
   const [health, setHealth] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const showToast = useToast();
 
   async function loadDashboard() {
     setIsLoading(true);
     setError('');
 
-    const [healthRes, aptsRes, resRes] = await Promise.allSettled([
-      apiClient('/health', { token: null }),
-      fetchApartments(),
-      fetchResidents(),
-    ]);
+    try {
+      // Kiểm tra health check
+      const healthRes = await apiClient('/health', { token: null }).then(() => true).catch(() => false);
+      setHealth(healthRes);
 
-    setHealth(healthRes.status === 'fulfilled');
+      // Thử gọi dashboard stats API trước
+      const dashStats = await fetchDashboardStats();
 
-    setMetrics({
-      apartments: aptsRes.status === 'fulfilled' ? aptsRes.value.length : 0,
-      residents: resRes.status === 'fulfilled' ? resRes.value.length : 0,
-      fees: 0,
-      payments: 0,
-    });
+      if (dashStats) {
+        // Backend đã có Dashboard API
+        setMetrics({
+          apartments: dashStats.totalApartments ?? dashStats.apartments ?? 0,
+          residents: dashStats.totalResidents ?? dashStats.residents ?? 0,
+          fees: dashStats.totalFees ?? dashStats.fees ?? 0,
+          payments: dashStats.totalPayments ?? dashStats.payments ?? 0,
+        });
+      } else {
+        // Fallback: đếm từ từng API riêng lẻ
+        const [aptsRes, resRes, feesRes, payRes] = await Promise.allSettled([
+          fetchApartments(),
+          fetchResidents(),
+          fetchFees(),
+          fetchPayments(),
+        ]);
 
-    const failed = [aptsRes, resRes].find((r) => r.status === 'rejected');
-    if (failed) setError(failed.reason?.message || 'Không tải được dữ liệu.');
+        setMetrics({
+          apartments: aptsRes.status === 'fulfilled' ? aptsRes.value.length : 0,
+          residents: resRes.status === 'fulfilled' ? resRes.value.length : 0,
+          fees: feesRes.status === 'fulfilled' ? feesRes.value.length : 0,
+          payments: payRes.status === 'fulfilled' ? payRes.value.length : 0,
+        });
+
+        const failed = [aptsRes, resRes, feesRes, payRes].find((r) => r.status === 'rejected');
+        if (failed) {
+          setError(failed.reason?.message || 'Không tải được một số dữ liệu.');
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Không tải được dữ liệu dashboard.');
+      showToast('Lỗi tải dữ liệu dashboard', 'error');
+    }
 
     setIsLoading(false);
   }
