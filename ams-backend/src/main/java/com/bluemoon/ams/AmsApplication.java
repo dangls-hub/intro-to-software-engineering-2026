@@ -24,6 +24,8 @@ public class AmsApplication {
                 User admin = new User();
                 admin.setUsername("admin");
                 admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setEmail("admin@bluemoon.vn");
+                admin.setFullName("Administrator");
                 admin.setRole(Role.ADMIN);
                 userRepository.save(admin);
             }

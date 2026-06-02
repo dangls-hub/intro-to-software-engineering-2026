@@ -29,6 +29,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Kích hoạt CORS
+                .cors(cors -> {})
+
                 // Disable CSRF vì REST API stateless
                 .csrf(csrf -> csrf.disable())
 

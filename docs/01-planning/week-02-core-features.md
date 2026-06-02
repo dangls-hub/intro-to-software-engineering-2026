@@ -157,13 +157,13 @@
 
 | Hạng mục | Người thực hiện | Trạng thái |
 |---|---|---|
-| `common/security/JwtUtil.java` | Đỗ Hải Đăng | ⬜ Todo |
-| `common/security/JwtAuthFilter.java` | Đỗ Hải Đăng | ⬜ Todo |
-| `common/config/SecurityConfig.java` | Đỗ Hải Đăng | ⬜ Todo |
-| `common/config/CorsConfig.java` | Đỗ Hải Đăng | ⬜ Todo |
-| `common/response/ApiResponse.java` | Đỗ Hải Đăng | ⬜ Todo |
-| `common/exception/GlobalExceptionHandler.java` | Đỗ Hải Đăng | ⬜ Todo |
-| `module/fee/` (Entity → Controller) | Đỗ Hải Đăng | ⬜ Todo |
+| `common/security/JwtUtil.java` | Đỗ Hải Đăng | ✅ Done |
+| `common/security/JwtAuthFilter.java` | Đỗ Hải Đăng | ✅ Done |
+| `common/config/SecurityConfig.java` | Đỗ Hải Đăng | ✅ Done |
+| `common/config/CorsConfig.java` | Đỗ Hải Đăng | ✅ Done |
+| `common/response/ApiResponse.java` | Đỗ Hải Đăng | ✅ Done |
+| `common/exception/GlobalExceptionHandler.java` | Đỗ Hải Đăng | ✅ Done |
+| `module/fee/` (Entity → Controller) | Đỗ Hải Đăng | ✅ Done |
 | `module/auth/` (Entity → Controller) | Hoàng Gia Huy | ⬜ Todo |
 | `module/apartment/` (Entity → Controller) | Hoàng Gia Huy | ⬜ Todo |
 | `module/resident/` (Entity → Controller) | Nguyễn Đức Khải | ⬜ Todo |
