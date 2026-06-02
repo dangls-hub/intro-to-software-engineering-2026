@@ -3,11 +3,17 @@ spring:
     name: ams-backend
 
   datasource:
-    # Docker Compose đang expose MySQL ra port 3307 trên máy host.
-    url: jdbc:mysql://localhost:3307/bluemoon_ams?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh
-    username: root
-    password: NhapMonCongNghePhanMem
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Dùng H2 in-memory database cho dev khi không có MySQL/Docker.
+    # Khi có Docker MySQL, đổi lại url/driver sang MySQL.
+    url: jdbc:h2:mem:bluemoon_ams;DB_CLOSE_DELAY=-1;MODE=MYSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
   jpa:
     hibernate:
@@ -16,7 +22,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
 
 server:
   port: 8080
