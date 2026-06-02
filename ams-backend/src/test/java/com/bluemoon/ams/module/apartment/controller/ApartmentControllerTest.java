@@ -26,7 +26,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -172,7 +172,7 @@ public class ApartmentControllerTest {
     public void testCreateApartment_DuplicateRoom() throws Exception {
         // Arrange
         when(apartmentService.createApartment(any(ApartmentRequest.class)))
-                .thenThrow(new RuntimeException("Số phòng đã tồn tại"));
+                .thenThrow(new IllegalArgumentException("Số phòng đã tồn tại"));
 
         // Act & Assert
         mockMvc.perform(post("/api/v1/apartments")
@@ -248,7 +248,7 @@ public class ApartmentControllerTest {
     @WithMockUser(roles = "ADMIN")
     public void testDeleteApartment_Success() throws Exception {
         // Arrange
-        when(apartmentService.deleteApartment(1L)).thenReturn(true);
+        // Arrange (void method does nothing by default in mockito)
 
         // Act & Assert
         mockMvc.perform(delete("/api/v1/apartments/1")
@@ -264,8 +264,8 @@ public class ApartmentControllerTest {
     @WithMockUser(roles = "ADMIN")
     public void testDeleteApartment_NotFound() throws Exception {
         // Arrange
-        when(apartmentService.deleteApartment(999L))
-                .thenThrow(new ResourceNotFoundException("Căn hộ không tồn tại"));
+        doThrow(new ResourceNotFoundException("Căn hộ không tồn tại"))
+                .when(apartmentService).deleteApartment(999L);
 
         // Act & Assert
         mockMvc.perform(delete("/api/v1/apartments/999")
@@ -285,7 +285,7 @@ public class ApartmentControllerTest {
         apartments.add(apartmentResponse);
         Page<ApartmentResponse> page = new PageImpl<>(apartments);
 
-        when(apartmentService.getAllApartments(isNull(), eq(1), isNull(), any(Pageable.class)))
+        when(apartmentService.getAllApartments(eq(1), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(page);
 
         // Act & Assert
@@ -310,7 +310,7 @@ public class ApartmentControllerTest {
         apartments.add(apartmentResponse);
         Page<ApartmentResponse> page = new PageImpl<>(apartments);
 
-        when(apartmentService.getAllApartments(isNull(), isNull(), eq("AVAILABLE"), any(Pageable.class)))
+        when(apartmentService.getAllApartments(isNull(), eq("AVAILABLE"), isNull(), any(Pageable.class)))
                 .thenReturn(page);
 
         // Act & Assert
@@ -335,7 +335,7 @@ public class ApartmentControllerTest {
         apartments.add(apartmentResponse);
         Page<ApartmentResponse> page = new PageImpl<>(apartments);
 
-        when(apartmentService.getAllApartments(eq("101"), isNull(), isNull(), any(Pageable.class)))
+        when(apartmentService.getAllApartments(isNull(), isNull(), eq("101"), any(Pageable.class)))
                 .thenReturn(page);
 
         // Act & Assert
@@ -358,7 +358,7 @@ public class ApartmentControllerTest {
         // Arrange
         List<ApartmentResponse> apartments = new ArrayList<>();
         apartments.add(apartmentResponse);
-        Page<ApartmentResponse> page = new PageImpl<>(apartments);
+        Page<ApartmentResponse> page = new PageImpl<>(apartments, org.springframework.data.domain.PageRequest.of(0, 10), 1);
 
         when(apartmentService.getAllApartments(isNull(), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(page);
@@ -423,6 +423,6 @@ public class ApartmentControllerTest {
         mockMvc.perform(post("/api/v1/apartments")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(apartmentRequest)))
-                .andExpect(status().isOk());  // Hoặc isForbidden() nếu có @PreAuthorize("ADMIN")
+                .andExpect(status().isCreated());  // Hoặc isForbidden() nếu có @PreAuthorize("ADMIN")
     }
 }

@@ -81,7 +81,7 @@ public class ApartmentService {
     public ApartmentResponse createApartment(ApartmentRequest request) {
         // Kiểm tra số phòng không được trùng
         if (apartmentRepository.existsByRoomNumber(request.getRoomNumber())) {
-            throw new RuntimeException("Số phòng '" + request.getRoomNumber() + "' đã tồn tại");
+            throw new IllegalArgumentException("Số phòng '" + request.getRoomNumber() + "' đã tồn tại");
         }
 
         Apartment apartment = apartmentMapper.toEntity(request);
@@ -101,7 +101,7 @@ public class ApartmentService {
         // Kiểm tra số phòng không được trùng (nếu thay đổi số phòng)
         if (!apartment.getRoomNumber().equals(request.getRoomNumber()) 
                 && apartmentRepository.existsByRoomNumber(request.getRoomNumber())) {
-            throw new RuntimeException("Số phòng '" + request.getRoomNumber() + "' đã tồn tại");
+            throw new IllegalArgumentException("Số phòng '" + request.getRoomNumber() + "' đã tồn tại");
         }
 
         apartment.setRoomNumber(request.getRoomNumber());
