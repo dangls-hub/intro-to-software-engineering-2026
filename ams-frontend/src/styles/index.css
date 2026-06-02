@@ -1043,3 +1043,127 @@ code {
   font-size: 0.95rem;
 }
 
+/* ── Toast Notifications ─────────────────────── */
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 200;
+  max-width: 420px;
+  width: calc(100% - 48px);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: var(--shadow-lg);
+  pointer-events: all;
+  position: relative;
+  overflow: hidden;
+  animation: toast-slide-in 0.3s var(--ease) both;
+}
+
+.toast-exit {
+  animation: toast-slide-out 0.28s var(--ease) both;
+}
+
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toast-slide-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(24px) scale(0.96); }
+}
+
+.toast-success {
+  background: rgba(16, 40, 30, 0.95);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: var(--success);
+  backdrop-filter: blur(12px);
+}
+
+.toast-error {
+  background: rgba(40, 16, 16, 0.95);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+  backdrop-filter: blur(12px);
+}
+
+.toast-warning {
+  background: rgba(40, 32, 10, 0.95);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: var(--warning);
+  backdrop-filter: blur(12px);
+}
+
+.toast-info {
+  background: rgba(16, 24, 48, 0.95);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: var(--info);
+  backdrop-filter: blur(12px);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toast-message {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 4px;
+  margin: -4px -4px -4px 0;
+  transition: opacity var(--duration) var(--ease);
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.3;
+  transform-origin: left;
+  animation: toast-countdown linear forwards;
+}
+
+@keyframes toast-countdown {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+@media (max-width: 560px) {
+  .toast-container {
+    bottom: 16px;
+    right: 16px;
+    width: calc(100% - 32px);
+  }
+}
+
