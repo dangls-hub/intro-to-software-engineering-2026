@@ -20,6 +20,8 @@ import { ToastProvider } from './components/ui/Toast';
 import { PrivateRoute, PublicRoute } from './routes/AppRouter';
 
 import LoginPage from './features/auth/pages/LoginPage';
+import RegisterPage from './features/auth/pages/RegisterPage';
+import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import ResidentsPage from './features/residents/pages/ResidentsPage';
@@ -115,6 +117,22 @@ function AppRoutes() {
           </PublicRoute>
         }
         path="/login"
+      />
+      <Route
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        }
+        path="/register"
+      />
+      <Route
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+        path="/forgot-password"
       />
       <Route
         element={
