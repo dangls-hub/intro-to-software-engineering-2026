@@ -9,7 +9,7 @@ import {
 import { useToast } from '../../../components/ui/Toast';
 
 const emptyForm = {
-  code: '',
+  roomNumber: '',
   floor: '',
   area: '',
   status: 'AVAILABLE',
@@ -61,7 +61,7 @@ function ApartmentsPage() {
   function startEdit(apartment) {
     setEditingId(apartment.id);
     setForm({
-      code: apartment.code ?? '',
+      roomNumber: apartment.roomNumber ?? '',
       floor: apartment.floor ?? '',
       area: apartment.area ?? '',
       status: apartment.status ?? 'AVAILABLE',
@@ -97,7 +97,7 @@ function ApartmentsPage() {
   }
 
   async function handleDelete(apartment) {
-    const confirmed = window.confirm(`Xóa hoặc vô hiệu hóa căn hộ ${apartment.code}?`);
+    const confirmed = window.confirm(`Xóa hoặc vô hiệu hóa căn hộ ${apartment.roomNumber}?`);
     if (!confirmed) {
       return;
     }
@@ -151,7 +151,7 @@ function ApartmentsPage() {
 
           <label>
             Mã căn hộ
-            <input name="code" onChange={updateField} required type="text" value={form.code} placeholder="VD: A-101" />
+            <input name="roomNumber" onChange={updateField} required type="text" value={form.roomNumber} placeholder="VD: A-101" />
           </label>
 
           <label>
@@ -222,8 +222,8 @@ function ApartmentsPage() {
                   {filtered.map((apartment) => {
                     const st = statusMap[apartment.status] || { label: apartment.status || '—', cls: 'inactive' };
                     return (
-                      <tr key={apartment.id || apartment.code}>
-                        <td style={{ fontWeight: 700 }}>{apartment.code || '—'}</td>
+                      <tr key={apartment.id || apartment.roomNumber}>
+                        <td style={{ fontWeight: 700 }}>{apartment.roomNumber || '—'}</td>
                         <td>{apartment.floor || '—'}</td>
                         <td>{apartment.area != null ? `${apartment.area} m²` : '—'}</td>
                         <td>

@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -69,42 +71,44 @@ public class AuthController {
      * POST /api/v1/auth/change-password
      */
     @PostMapping("/change-password")
-    public ResponseEntity<ApiResponse<String>> changePassword(
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            @Valid @RequestBody ChangePasswordRequest request) {
-        // Lấy username từ JWT token
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+    public ResponseEntity<ApiResponse<String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("Vui lòng đăng nhập để đổi mật khẩu");
         }
-        String token = authorization.substring(7);
-        String username = jwtUtil.extractUsername(token);
-
+        String username = authentication.getName();
         authService.changePassword(username, request);
         return ResponseEntity.ok(ApiResponse.ok("Đổi mật khẩu thành công", null));
     }
 
     /**
-     * API lấy thông tin user hiện tại (cần token)
+     * API lấy thông tin user hiện tại (cần token hợp lệ)
      * GET /api/v1/auth/me
+     * Header: Authorization: Bearer <token>
      */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getCurrentUser(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new RuntimeException("Vui lòng đăng nhập");
+    public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser() {
+        // Lấy authentication từ SecurityContext
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Không được phép truy cập");
         }
-        String token = authorization.substring(7);
-        String username = jwtUtil.extractUsername(token);
+
+        // Lấy username từ authentication
+        String username = authentication.getName();
+        
+        // Lấy thông tin user từ database
         User user = authService.getUserByUsername(username);
 
-        Map<String, Object> userData = Map.of(
-                "userId", user.getId(),
-                "username", user.getUsername(),
-                "email", user.getEmail(),
-                "fullName", user.getFullName() != null ? user.getFullName() : "",
-                "role", user.getRole().toString()
-        );
+        UserInfoResponse response = UserInfoResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName() != null ? user.getFullName() : "")
+                .role(user.getRole().toString())
+                .build();
 
-        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin thành công", userData));
+        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
     }
 }
