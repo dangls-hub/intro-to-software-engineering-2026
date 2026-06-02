@@ -46,6 +46,9 @@ public class SecurityConfig {
                         // Route công khai (không cần token)
                         .requestMatchers("/api/v1/health").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/forgot-password").permitAll()
+                        .requestMatchers("/api/v1/auth/reset-password").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         
                         // Route bảo vệ - yêu cầu JWT token
