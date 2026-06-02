@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
 import { createPayment, deletePayment, fetchPayments } from '../api/paymentsApi';
 import { fetchFees } from '../../fees/api/feesApi';
+import { useToast } from '../../../components/ui/Toast';
 
 const emptyForm = { feeId: '', amount: '', method: 'CASH', note: '' };
 
@@ -18,6 +19,7 @@ function PaymentsPage({ role }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const showToast = useToast();
 
   async function loadData() {
     setIsLoading(true); setError('');
@@ -44,15 +46,16 @@ function PaymentsPage({ role }) {
     try {
       await createPayment(payload);
       closeModal(); await loadData();
-    } catch (err) { setError(err.message || 'Không ghi nhận được thanh toán.'); }
+      showToast('Ghi nhận thanh toán thành công!', 'success');
+    } catch (err) { setError(err.message || 'Không ghi nhận được thanh toán.'); showToast(err.message || 'Không ghi nhận được thanh toán.', 'error'); }
     finally { setIsSubmitting(false); }
   }
 
   async function handleDelete(p) {
     if (!window.confirm('Bạn có chắc muốn xóa giao dịch này?')) return;
     setError('');
-    try { await deletePayment(p.id); await loadData(); }
-    catch (err) { setError(err.message || 'Không xóa được giao dịch.'); }
+    try { await deletePayment(p.id); await loadData(); showToast('Xóa giao dịch thành công!', 'success'); }
+    catch (err) { setError(err.message || 'Không xóa được giao dịch.'); showToast(err.message || 'Không xóa được giao dịch.', 'error'); }
   }
 
   const fmt = (n) => n != null ? Number(n).toLocaleString('vi-VN') + ' đ' : '—';

@@ -6,6 +6,7 @@ import {
   fetchApartments,
   updateApartment,
 } from '../api/apartmentsApi';
+import { useToast } from '../../../components/ui/Toast';
 
 const emptyForm = {
   code: '',
@@ -28,6 +29,7 @@ function ApartmentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const showToast = useToast();
 
   async function loadApartments() {
     setIsLoading(true);
@@ -85,8 +87,10 @@ function ApartmentsPage() {
 
       resetForm();
       await loadApartments();
+      showToast(editingId ? 'Cập nhật căn hộ thành công!' : 'Thêm căn hộ thành công!', 'success');
     } catch (apiError) {
       setError(apiError.message || 'Không lưu được căn hộ.');
+      showToast(apiError.message || 'Không lưu được căn hộ.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -103,8 +107,10 @@ function ApartmentsPage() {
     try {
       await deleteApartment(apartment.id);
       await loadApartments();
+      showToast('Xóa căn hộ thành công!', 'success');
     } catch (apiError) {
       setError(apiError.message || 'Không xóa được căn hộ.');
+      showToast(apiError.message || 'Không xóa được căn hộ.', 'error');
     }
   }
 

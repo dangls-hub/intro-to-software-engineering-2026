@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Edit3, Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
 import { createFee, deleteFee, fetchFees, updateFee } from '../api/feesApi';
 import { fetchApartments } from '../../apartments/api/apartmentsApi';
+import { useToast } from '../../../components/ui/Toast';
 
 const emptyForm = {
   name: '', type: 'MANDATORY', amount: '', dueDate: '',
@@ -27,6 +28,7 @@ function FeesPage({ role }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const showToast = useToast();
 
   async function loadData() {
     setIsLoading(true); setError('');
@@ -67,15 +69,16 @@ function FeesPage({ role }) {
       if (editingId) await updateFee(editingId, payload);
       else await createFee(payload);
       closeModal(); await loadData();
-    } catch (err) { setError(err.message || 'Không lưu được khoản thu.'); }
+      showToast(editingId ? 'Cập nhật khoản thu thành công!' : 'Tạo khoản thu thành công!', 'success');
+    } catch (err) { setError(err.message || 'Không lưu được khoản thu.'); showToast(err.message || 'Không lưu được khoản thu.', 'error'); }
     finally { setIsSubmitting(false); }
   }
 
   async function handleDelete(f) {
     if (!window.confirm(`Bạn có chắc muốn xóa khoản thu "${f.name}"?`)) return;
     setError('');
-    try { await deleteFee(f.id); await loadData(); }
-    catch (err) { setError(err.message || 'Không xóa được khoản thu.'); }
+    try { await deleteFee(f.id); await loadData(); showToast('Xóa khoản thu thành công!', 'success'); }
+    catch (err) { setError(err.message || 'Không xóa được khoản thu.'); showToast(err.message || 'Không xóa được khoản thu.', 'error'); }
   }
 
   const fmt = (n) => n != null ? Number(n).toLocaleString('vi-VN') + ' đ' : '—';

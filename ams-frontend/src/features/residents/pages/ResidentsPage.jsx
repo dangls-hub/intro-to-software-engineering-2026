@@ -7,6 +7,7 @@ import {
   fetchResidents,
   updateResident,
 } from '../api/residentsApi';
+import { useToast } from '../../../components/ui/Toast';
 
 const emptyForm = {
   fullName: '',
@@ -42,6 +43,7 @@ function ResidentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const showToast = useToast();
 
   async function loadPageData() {
     setIsLoading(true);
@@ -112,8 +114,10 @@ function ResidentsPage() {
 
       resetForm();
       await loadPageData();
+      showToast(editingId ? 'Cập nhật cư dân thành công!' : 'Thêm cư dân thành công!', 'success');
     } catch (apiError) {
       setError(apiError.message || 'Không lưu được cư dân.');
+      showToast(apiError.message || 'Không lưu được cư dân.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -130,8 +134,10 @@ function ResidentsPage() {
     try {
       await deleteResident(resident.id);
       await loadPageData();
+      showToast('Xóa cư dân thành công!', 'success');
     } catch (apiError) {
       setError(apiError.message || 'Không xóa được cư dân.');
+      showToast(apiError.message || 'Không xóa được cư dân.', 'error');
     }
   }
 
