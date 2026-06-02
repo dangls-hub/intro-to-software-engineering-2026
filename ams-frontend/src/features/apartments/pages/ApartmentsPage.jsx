@@ -110,7 +110,7 @@ function ApartmentsPage() {
 
   const filtered = apartments.filter(
     (a) =>
-      (a.code || '').toLowerCase().includes(search.toLowerCase()) ||
+      (a.roomNumber || '').toLowerCase().includes(search.toLowerCase()) ||
       (a.floor || '').toLowerCase().includes(search.toLowerCase())
   );
 

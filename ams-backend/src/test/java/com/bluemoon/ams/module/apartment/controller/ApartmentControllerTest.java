@@ -386,7 +386,7 @@ public class ApartmentControllerTest {
                 .roomNumber("101")
                 .floor(1)
                 .area(50.0)
-                .status("OCCUPIED")
+                .status("INACTIVE")
                 .description("Căn hộ test")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
