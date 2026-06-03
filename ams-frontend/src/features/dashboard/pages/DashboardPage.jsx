@@ -96,7 +96,7 @@ function DashboardPage() {
       <header className="page-header">
         <div>
           <p className="eyebrow">
-            <TrendingUp size={14} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            <TrendingUp size={14} />
             Tổng quan hệ thống
           </p>
           <h1>{greeting} 👋</h1>
@@ -110,8 +110,8 @@ function DashboardPage() {
       {error && <div className="alert warning">{error}</div>}
 
       <section className="metric-grid" aria-label="Thống kê nhanh" aria-busy={isLoading}>
-        {cards.map(({ label, value, icon: Icon, color }) => (
-          <article className="metric-card" key={label}>
+        {cards.map(({ label, value, icon: Icon, color }, index) => (
+          <article className="metric-card" key={label} style={{ '--i': index }}>
             <div className={`metric-icon ${color}`}>
               <Icon size={24} aria-hidden="true" />
             </div>
@@ -129,7 +129,7 @@ function DashboardPage() {
             <p className="eyebrow">Trạng thái hệ thống</p>
             <h2>Kết nối Backend</h2>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="system-status-row">
             <Activity
               size={18}
               aria-hidden="true"
@@ -144,8 +144,8 @@ function DashboardPage() {
             </span>
           </div>
         </div>
-        <p className="muted-text" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Clock size={16} style={{ flexShrink: 0, opacity: 0.6 }} />
+        <p className="muted-text system-description">
+          <Clock size={16} />
           Hệ thống quản lý chung cư BlueMoon — quản lý căn hộ, cư dân, khoản thu và thanh toán.
           Dữ liệu được đồng bộ từ backend Spring Boot và lưu trữ trên MySQL.
         </p>

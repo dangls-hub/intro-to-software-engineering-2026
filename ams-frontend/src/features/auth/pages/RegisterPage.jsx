@@ -66,7 +66,7 @@ function RegisterPage() {
             Tài khoản cư dân của bạn đã được tạo. Bạn có thể đăng nhập ngay bây giờ.
           </div>
 
-          <Link to="/login" className="primary-button full-width" style={{ marginTop: 8, textDecoration: 'none', textAlign: 'center' }}>
+          <Link to="/login" className="primary-button full-width submit-mt" style={{ textDecoration: 'none', textAlign: 'center' }}>
             <ArrowLeft size={18} aria-hidden="true" />
             Đi đến trang đăng nhập
           </Link>
@@ -135,7 +135,7 @@ function RegisterPage() {
 
           <label>
             Mật khẩu
-            <div style={{ position: 'relative' }}>
+            <div className="pw-field">
               <input
                 autoComplete="new-password"
                 id="register-password"
@@ -145,22 +145,11 @@ function RegisterPage() {
                 required
                 type={showPw ? 'text' : 'password'}
                 value={form.password}
-                style={{ paddingRight: 44 }}
               />
               <button
                 type="button"
+                className="pw-toggle"
                 onClick={() => setShowPw(!showPw)}
-                style={{
-                  position: 'absolute',
-                  right: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  padding: 6,
-                  cursor: 'pointer',
-                }}
                 aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
               >
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -183,11 +172,10 @@ function RegisterPage() {
           </label>
 
           <button
-            className="primary-button full-width"
+            className="primary-button full-width submit-mt"
             disabled={isSubmitting}
             id="register-submit"
             type="submit"
-            style={{ marginTop: 8 }}
           >
             {isSubmitting ? (
               <>

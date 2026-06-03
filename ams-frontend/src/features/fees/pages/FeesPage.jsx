@@ -91,8 +91,11 @@ function FeesPage({ role }) {
   return (
     <>
       <header className="page-header">
-        <div><p className="eyebrow">{isResident ? 'My Fees' : 'Fee'}</p><h1>{isResident ? 'Khoản thu của tôi' : 'Quản lý khoản thu'}</h1></div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div>
+          <p className="eyebrow">{isResident ? 'My Fees' : 'Fee'}</p>
+          <h1>{isResident ? 'Khoản thu của tôi' : 'Quản lý khoản thu'}</h1>
+        </div>
+        <div className="page-header-actions">
           <button className="secondary-button" onClick={loadData} type="button"><RefreshCcw size={17} /> Tải lại</button>
           {!isResident && <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Tạo khoản thu</button>}
         </div>
@@ -184,7 +187,7 @@ function FeesPage({ role }) {
                   <option value="OVERDUE">Quá hạn</option>
                 </select>
               </label>
-              <div className="modal-footer" style={{ margin: 0, padding: 0, border: 'none' }}>
+              <div className="modal-footer">
                 <button className="secondary-button" onClick={closeModal} type="button">Hủy</button>
                 <button className="primary-button" disabled={isSubmitting} type="submit">
                   {isSubmitting ? <><span className="spinner" /> Đang lưu...</> : editingId ? 'Lưu thay đổi' : 'Tạo khoản thu'}

@@ -76,7 +76,7 @@ function ForgotPasswordPage() {
             Mật khẩu đã được đặt lại. Bạn có thể đăng nhập với mật khẩu mới.
           </div>
 
-          <Link to="/login" className="primary-button full-width" style={{ marginTop: 8, textDecoration: 'none', textAlign: 'center' }}>
+          <Link to="/login" className="primary-button full-width submit-mt" style={{ textDecoration: 'none', textAlign: 'center' }}>
             <ArrowLeft size={18} aria-hidden="true" />
             Đi đến trang đăng nhập
           </Link>
@@ -103,7 +103,7 @@ function ForgotPasswordPage() {
           {demoToken && (
             <div className="alert success" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
               <strong>🔑 Mã xác nhận (Demo):</strong>
-              <code style={{ fontSize: '1.2rem', letterSpacing: '0.1em', fontWeight: 800 }}>{demoToken}</code>
+              <code style={{ fontSize: '1.15rem', letterSpacing: '0.1em', fontWeight: 800 }}>{demoToken}</code>
               <small style={{ opacity: 0.8 }}>Trong production, mã này sẽ được gửi qua email.</small>
             </div>
           )}
@@ -150,11 +150,10 @@ function ForgotPasswordPage() {
             </label>
 
             <button
-              className="primary-button full-width"
+              className="primary-button full-width submit-mt"
               disabled={isSubmitting}
               id="reset-submit"
               type="submit"
-              style={{ marginTop: 8 }}
             >
               {isSubmitting ? (
                 <>
@@ -194,7 +193,7 @@ function ForgotPasswordPage() {
           </div>
         </div>
 
-        <p className="muted-text" style={{ marginBottom: 20, fontSize: '0.9rem' }}>
+        <p className="muted-text" style={{ marginBottom: 20 }}>
           Nhập email đã đăng ký để nhận mã đặt lại mật khẩu.
         </p>
 
@@ -215,11 +214,10 @@ function ForgotPasswordPage() {
           </label>
 
           <button
-            className="primary-button full-width"
+            className="primary-button full-width submit-mt"
             disabled={isSubmitting}
             id="forgot-submit"
             type="submit"
-            style={{ marginTop: 8 }}
           >
             {isSubmitting ? (
               <>

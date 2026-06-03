@@ -81,7 +81,7 @@ function LoginPage() {
 
           <label>
             Mật khẩu
-            <div style={{ position: 'relative' }}>
+            <div className="pw-field">
               <input
                 autoComplete="current-password"
                 id="login-password"
@@ -91,22 +91,11 @@ function LoginPage() {
                 required
                 type={showPw ? 'text' : 'password'}
                 value={form.password}
-                style={{ paddingRight: 44 }}
               />
               <button
                 type="button"
+                className="pw-toggle"
                 onClick={() => setShowPw(!showPw)}
-                style={{
-                  position: 'absolute',
-                  right: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  padding: 6,
-                  cursor: 'pointer',
-                }}
                 aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
               >
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -114,18 +103,17 @@ function LoginPage() {
             </div>
           </label>
 
-          <div style={{ textAlign: 'right', marginTop: -8 }}>
-            <Link to="/forgot-password" className="auth-link" style={{ fontSize: '0.85rem' }}>
+          <div className="forgot-link-row">
+            <Link to="/forgot-password" className="auth-link">
               Quên mật khẩu?
             </Link>
           </div>
 
           <button
-            className="primary-button full-width"
+            className="primary-button full-width submit-mt"
             disabled={isSubmitting}
             id="login-submit"
             type="submit"
-            style={{ marginTop: 4 }}
           >
             {isSubmitting ? (
               <>
@@ -148,19 +136,8 @@ function LoginPage() {
           </Link>
         </p>
 
-        <p
-          className="muted-text"
-          style={{
-            marginTop: 20,
-            textAlign: 'center',
-            fontSize: '0.82rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-          }}
-        >
-          <ShieldCheck size={14} style={{ opacity: 0.6 }} />
+        <p className="auth-security-note">
+          <ShieldCheck size={14} />
           Hệ thống được bảo mật bằng JWT
         </p>
       </section>

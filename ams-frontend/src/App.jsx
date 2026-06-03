@@ -1,9 +1,11 @@
+import { useState, useEffect, useCallback } from 'react';
 import {
   BrowserRouter,
   NavLink,
   Navigate,
   Route,
   Routes,
+  useLocation,
 } from 'react-router-dom';
 import {
   Building2,
@@ -11,11 +13,16 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Menu,
+  Moon,
   Receipt,
+  Sun,
   Users,
+  X,
 } from 'lucide-react';
 
 import { AuthProvider, useAuth } from './store/authStore';
+import { ThemeProvider, useTheme } from './store/themeStore';
 import { ToastProvider } from './components/ui/Toast';
 import { PrivateRoute, PublicRoute } from './routes/AppRouter';
 
@@ -47,17 +54,64 @@ const residentNavItems = [
 
 function AppLayout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
   const role = user?.role || 'STAFF';
   const isResident = role === 'RESIDENT';
   const navItems = isResident ? residentNavItems : adminStaffNavItems;
   const displayName = user?.fullName || user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
+  // Close sidebar on route change
+  useEffect(() => {
+    closeSidebar();
+  }, [location.pathname, closeSidebar]);
+
+  // Close sidebar on Escape key
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && sidebarOpen) closeSidebar();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen, closeSidebar]);
+
+  // Prevent body scroll when sidebar open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
   return (
     <main className="app-shell">
-      <aside className="sidebar">
+      {/* Mobile hamburger toggle */}
+      <button
+        className="sidebar-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        type="button"
+        aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
+      >
+        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile backdrop */}
+      <div
+        className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`}
+        onClick={closeSidebar}
+        aria-hidden="true"
+      />
+
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand">
           <span className="brand-mark">
-            <Building2 size={22} aria-hidden="true" />
+            <Building2 size={20} aria-hidden="true" />
           </span>
           <div>
             <span>BlueMoon AMS</span>
@@ -78,10 +132,25 @@ function AppLayout() {
           ))}
         </nav>
 
-        <button className="logout-button" onClick={logout} type="button">
-          <LogOut size={18} aria-hidden="true" />
-          Đăng xuất
-        </button>
+        <div className="sidebar-bottom">
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            type="button"
+            aria-label={theme === 'dark' ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
+          >
+            {theme === 'dark' ? (
+              <><Sun size={16} aria-hidden="true" /> Chế độ sáng</>
+            ) : (
+              <><Moon size={16} aria-hidden="true" /> Chế độ tối</>
+            )}
+          </button>
+
+          <button className="logout-button" onClick={logout} type="button">
+            <LogOut size={18} aria-hidden="true" />
+            Đăng xuất
+          </button>
+        </div>
       </aside>
 
       <section className="content">
@@ -149,11 +218,13 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

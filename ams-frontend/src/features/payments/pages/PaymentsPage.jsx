@@ -69,8 +69,11 @@ function PaymentsPage({ role }) {
   return (
     <>
       <header className="page-header">
-        <div><p className="eyebrow">{isResident ? 'My Payments' : 'Payment'}</p><h1>{isResident ? 'Thanh toán của tôi' : 'Quản lý thanh toán'}</h1></div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div>
+          <p className="eyebrow">{isResident ? 'My Payments' : 'Payment'}</p>
+          <h1>{isResident ? 'Thanh toán của tôi' : 'Quản lý thanh toán'}</h1>
+        </div>
+        <div className="page-header-actions">
           <button className="secondary-button" onClick={loadData} type="button"><RefreshCcw size={17} /> Tải lại</button>
           {!isResident && <button className="primary-button" onClick={openCreate} type="button"><Plus size={17} /> Ghi nhận thanh toán</button>}
         </div>
@@ -149,7 +152,7 @@ function PaymentsPage({ role }) {
                 </select>
               </label>
               <label>Ghi chú <input name="note" onChange={updateField} value={form.note} placeholder="Ghi chú thêm..." /></label>
-              <div className="modal-footer" style={{ margin: 0, padding: 0, border: 'none' }}>
+              <div className="modal-footer">
                 <button className="secondary-button" onClick={closeModal} type="button">Hủy</button>
                 <button className="primary-button" disabled={isSubmitting} type="submit">
                   {isSubmitting ? <><span className="spinner" /> Đang lưu...</> : 'Ghi nhận thanh toán'}

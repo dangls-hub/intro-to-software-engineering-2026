@@ -18,15 +18,15 @@ function ResidentDashboardPage() {
       <header className="page-header">
         <div>
           <p className="eyebrow">
-            <Home size={14} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            <Home size={14} />
             Trang cư dân
           </p>
           <h1>{greeting}, {user?.fullName || user?.username || 'Cư dân'} 👋</h1>
         </div>
       </header>
 
-      <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(155px, 1fr))' }}>
-        <article className="metric-card">
+      <section className="metric-grid">
+        <article className="metric-card" style={{ '--i': 0 }}>
           <div className="metric-icon blue">
             <User size={24} aria-hidden="true" />
           </div>
@@ -36,7 +36,7 @@ function ResidentDashboardPage() {
           </div>
         </article>
 
-        <article className="metric-card">
+        <article className="metric-card" style={{ '--i': 1 }}>
           <div className="metric-icon purple">
             <Receipt size={24} aria-hidden="true" />
           </div>
@@ -46,7 +46,7 @@ function ResidentDashboardPage() {
           </div>
         </article>
 
-        <article className="metric-card">
+        <article className="metric-card" style={{ '--i': 2 }}>
           <div className="metric-icon green">
             <CreditCard size={24} aria-hidden="true" />
           </div>
@@ -86,8 +86,8 @@ function ResidentDashboardPage() {
           </div>
         </div>
 
-        <p className="muted-text" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
-          <Clock size={16} style={{ flexShrink: 0, opacity: 0.6 }} />
+        <p className="muted-text system-description" style={{ marginTop: 20 }}>
+          <Clock size={16} />
           Bạn có thể xem khoản thu và lịch sử thanh toán của mình tại các mục tương ứng trong menu bên trái.
         </p>
       </section>
