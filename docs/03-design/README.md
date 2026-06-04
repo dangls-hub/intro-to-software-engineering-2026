@@ -1,37 +1,142 @@
 # Thiết kế hệ thống
 
-## Kiến trúc tổng quan
+Tài liệu này mô tả thiết kế kiến trúc cho BlueMoon AMS dựa trên mã nguồn hiện tại trong repo. Nội dung mục `7.3` được trình bày theo hướng dẫn của tuần 10: chuyển các lớp phân tích/use case thành các thành phần thiết kế, tổ chức thành package, xác định kiến trúc và mô tả quan hệ giữa các thành phần.
 
-BlueMoon AMS được tổ chức theo mô hình monorepo:
+## 7.3 Thiết kế kiến trúc phần mềm
 
-- `ams-frontend`: ứng dụng React/Vite, chịu trách nhiệm giao diện và gọi API.
-- `ams-backend`: ứng dụng Spring Boot, cung cấp REST API, xác thực và xử lý nghiệp vụ.
-- `MySQL`: lưu trữ dữ liệu căn hộ, cư dân, khoản thu và thanh toán.
+### Mục tiêu kiến trúc
+
+BlueMoon AMS là hệ thống quản lý chung cư, tập trung vào các nghiệp vụ quản lý cư dân, căn hộ, khoản thu và thanh toán. Kiến trúc được thiết kế để:
+
+- Tách rõ giao diện, xử lý nghiệp vụ và lưu trữ dữ liệu.
+- Dễ mở rộng theo từng module nghiệp vụ như `resident`, `apartment`, `fee`, `payment`, `auth`.
+- Dễ kiểm thử vì mỗi tầng có trách nhiệm riêng.
+- Phù hợp với repo hiện tại gồm `ams-frontend`, `ams-backend`, `database`, `deployment` và `docs`.
+
+### Kiểu kiến trúc được chọn
+
+Hệ thống sử dụng kiến trúc client-server kết hợp mô hình MVC theo tầng:
+
+- **View**: ứng dụng React/Vite trong `ams-frontend`, gồm các trang và component hiển thị dữ liệu cho người dùng.
+- **Controller**: các REST controller trong Spring Boot backend, tiếp nhận HTTP request và trả HTTP response.
+- **Model**: entity, DTO, mapper, repository và service trong backend; dữ liệu được lưu trong MySQL.
+- **Service layer**: tầng xử lý nghiệp vụ nằm giữa controller và repository.
+- **Repository layer**: tầng truy cập dữ liệu sử dụng Spring Data JPA.
 
 ```mermaid
 flowchart LR
-    User["Admin/Staff"] --> Frontend["React/Vite Frontend"]
-    Frontend --> API["Spring Boot REST API"]
-    API --> Security["Spring Security/JWT"]
-    API --> Service["Business Services"]
+    User["Admin / Staff"] --> View["React Views\nams-frontend/src/features"]
+    View --> ApiClient["API Client\nsrc/lib/apiClient.js"]
+    ApiClient --> Controller["Spring REST Controllers"]
+    Controller --> Service["Business Services"]
     Service --> Repository["JPA Repositories"]
     Repository --> DB["MySQL Database"]
+    Controller --> Security["Spring Security / JWT"]
 ```
 
-## Module backend
+### Phân rã package theo MVC
 
-| Module | Trách nhiệm |
-|---|---|
-| `common.config` | Cấu hình chung, CORS, security, mapper |
-| `common.exception` | Xử lý lỗi tập trung |
-| `common.response` | Chuẩn hóa response API |
-| `module.auth` | Đăng nhập, user, role, JWT |
-| `module.apartment` | Quản lý căn hộ |
-| `module.resident` | Quản lý cư dân, hộ gia đình |
-| `module.fee` | Loại phí, đợt thu, khoản thu |
-| `module.payment` | Ghi nhận thanh toán, trạng thái giao dịch |
+| Nhóm thiết kế | Vị trí trong repo | Trách nhiệm |
+|---|---|---|
+| `views` | `ams-frontend/src/features/*/pages`, `components` | Hiển thị màn hình, nhận thao tác người dùng, gọi API |
+| `api client` | `ams-frontend/src/features/*/api`, `src/lib/apiClient.js` | Chuẩn hóa cách gọi REST API, gắn token xác thực |
+| `controllers` | `ams-backend/src/main/java/com/bluemoon/ams/module/*/controller` | Nhận request, validate input, gọi service |
+| `services` | `ams-backend/src/main/java/com/bluemoon/ams/module/*/service` | Xử lý nghiệp vụ chính của use case |
+| `models/entities` | `ams-backend/src/main/java/com/bluemoon/ams/module/*/entity` | Biểu diễn dữ liệu nghiệp vụ ánh xạ xuống database |
+| `dto` | `ams-backend/src/main/java/com/bluemoon/ams/module/*/dto` | Dữ liệu vào/ra của API, tránh lộ trực tiếp entity |
+| `mappers` | `ams-backend/src/main/java/com/bluemoon/ams/module/*/mapper` | Chuyển đổi giữa entity và DTO |
+| `repositories` | `ams-backend/src/main/java/com/bluemoon/ams/module/*/repository` | Truy vấn và ghi dữ liệu qua JPA |
+| `common` | `ams-backend/src/main/java/com/bluemoon/ams/common` | Cấu hình, bảo mật, response chuẩn, exception chung |
 
-## Cấu trúc dữ liệu dự kiến
+### Thiết kế module nghiệp vụ
+
+| Module | View/API frontend | Controller backend | Service backend | Model dữ liệu chính |
+|---|---|---|---|---|
+| Xác thực | `features/auth` | `module/auth/controller` | `module/auth/service` | `User`, `Role`, `UserRole` |
+| Căn hộ | `features/apartments` | `module/apartment/controller` | `module/apartment/service` | `Apartment` |
+| Cư dân | `features/residents` | `module/resident/controller` | `module/resident/service` | `Resident`, `Household` |
+| Khoản thu | `features/fees` | `module/fee/controller` | `module/fee/service` | `Fee`, `FeeType` |
+| Thanh toán | `features/payments` | `module/payment/controller` | `module/payment/service` | `Payment` |
+
+### Luồng xử lý use case
+
+Luồng chung cho các use case quản lý dữ liệu như xem danh sách cư dân, thêm căn hộ, tạo khoản thu hoặc ghi nhận thanh toán:
+
+```mermaid
+sequenceDiagram
+    actor Staff as Admin/Staff
+    participant Page as React Page
+    participant API as API Client
+    participant Controller as REST Controller
+    participant Service as Service
+    participant Repo as Repository
+    participant DB as MySQL
+
+    Staff->>Page: Thao tác trên giao diện
+    Page->>API: Gọi REST API
+    API->>Controller: HTTP request + JWT
+    Controller->>Service: Gửi DTO đã validate
+    Service->>Repo: Thực hiện nghiệp vụ và truy vấn
+    Repo->>DB: SELECT / INSERT / UPDATE
+    DB-->>Repo: Kết quả dữ liệu
+    Repo-->>Service: Entity
+    Service-->>Controller: DTO kết quả
+    Controller-->>API: Response chuẩn
+    API-->>Page: Dữ liệu hiển thị
+    Page-->>Staff: Cập nhật màn hình
+```
+
+### Kiến trúc backend
+
+Backend là ứng dụng Spring Boot trong `ams-backend`, sử dụng Java 17, Spring Web, Spring Security, Spring Data JPA, Bean Validation, JWT, Lombok và MapStruct.
+
+Quy ước tổ chức trong mỗi module:
+
+```text
+module/<domain>/
+  controller/   REST API endpoint
+  dto/          request/response object
+  entity/       JPA entity
+  mapper/       entity <-> dto mapper
+  repository/   Spring Data JPA repository
+  service/      business logic
+```
+
+Nguyên tắc thiết kế backend:
+
+- Controller không xử lý nghiệp vụ phức tạp; chỉ nhận request, validate và gọi service.
+- Service là nơi đặt luật nghiệp vụ như tính khoản thu, kiểm tra trạng thái thanh toán, kiểm tra dữ liệu cư dân/căn hộ.
+- Repository chỉ phụ trách truy cập dữ liệu.
+- DTO được dùng ở biên API để tránh trả trực tiếp entity.
+- `common.exception` và `common.response` chuẩn hóa lỗi và response.
+- `common.security` xử lý xác thực JWT và phân quyền.
+
+### Kiến trúc frontend
+
+Frontend là ứng dụng React/Vite trong `ams-frontend`, sử dụng React Router để điều hướng và tổ chức theo feature.
+
+```text
+src/
+  App.jsx
+  lib/apiClient.js
+  features/
+    auth/
+    dashboard/
+    residents/
+    apartments/
+    fees/
+    payments/
+```
+
+Nguyên tắc thiết kế frontend:
+
+- Mỗi feature chứa `pages`, `components` và `api` riêng.
+- `App.jsx` định nghĩa layout chính, sidebar và route.
+- `apiClient.js` quản lý base URL, token và cách gửi request.
+- Các trang chỉ điều phối trạng thái giao diện và gọi API; không chứa nghiệp vụ backend.
+- Các module `fees` và `payments` đã có vị trí điều hướng, sẵn sàng hoàn thiện khi API backend tương ứng được triển khai.
+
+### Thiết kế dữ liệu mức kiến trúc
 
 ```mermaid
 erDiagram
@@ -112,7 +217,7 @@ erDiagram
     FEE ||--o{ PAYMENT : paid_by
 ```
 
-## API contract dự kiến
+### API contract dự kiến
 
 | Nhóm | Method | Endpoint | Mục đích |
 |---|---|---|---|
@@ -134,7 +239,7 @@ erDiagram
 | Payments | GET | `/api/v1/payments` | Lấy danh sách thanh toán |
 | Payments | POST | `/api/v1/payments` | Ghi nhận thanh toán |
 
-## Quy ước response
+### Quy ước response
 
 Response thành công:
 
@@ -161,10 +266,15 @@ Response lỗi:
 }
 ```
 
-## Nguyên tắc bảo mật
+### Bảo mật và phân quyền
 
-- Mật khẩu lưu bằng hash, không lưu plain text.
-- API quản trị yêu cầu header `Authorization: Bearer <token>`.
-- Token hết hạn cần trả lỗi rõ ràng để frontend điều hướng về đăng nhập.
-- Không trả dữ liệu nhạy cảm như password hash trong response.
-- Các thao tác tài chính cần ghi nhận thời điểm tạo/cập nhật.
+- Người dùng đăng nhập qua module `auth` và nhận JWT.
+- Frontend lưu token và gửi trong header `Authorization: Bearer <token>`.
+- Spring Security kiểm tra token trước khi cho phép truy cập API quản trị.
+- Mật khẩu chỉ lưu dưới dạng hash.
+- Không trả dữ liệu nhạy cảm như `passwordHash` trong response.
+- Các nghiệp vụ tài chính như tạo khoản thu và ghi nhận thanh toán cần lưu thời điểm tạo/cập nhật để phục vụ đối soát.
+
+### Lý do chọn kiến trúc
+
+Kiến trúc MVC/client-server phù hợp với BlueMoon AMS vì hệ thống hiện tại là ứng dụng web nội bộ, có giao diện React tách khỏi backend Spring Boot và database MySQL. Cách chia module theo domain giúp nhóm phát triển có thể làm độc lập từng nghiệp vụ, đồng thời vẫn giữ được cấu trúc nhất quán giữa frontend và backend.
