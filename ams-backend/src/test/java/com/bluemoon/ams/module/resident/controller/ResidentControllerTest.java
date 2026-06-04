@@ -132,7 +132,7 @@ class ResidentControllerTest {
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.identityNumber").value("079201001234"));
+                .andExpect(jsonPath("$.data.identityNumber").value("012345678910"));
     }
 
     @Test
@@ -152,7 +152,7 @@ class ResidentControllerTest {
     @DisplayName("POST / → 400 when duplicate identity number")
     void createResident_withDuplicateIdentity_returns400() throws Exception {
         when(residentService.createResident(any()))
-                .thenThrow(new IllegalArgumentException("Identity number '079201001234' is already registered"));
+                .thenThrow(new IllegalArgumentException("Identity number '012345678910' is already registered"));
 
         mockMvc.perform(post("/api/v1/residents")
                         .header("Authorization", "Bearer " + adminToken)
@@ -196,7 +196,7 @@ class ResidentControllerTest {
     void deactivateResident_whenExists_returnsInactive() throws Exception {
         ResidentResponse inactive = new ResidentResponse();
         inactive.setId(1L);
-        inactive.setFullName("Nguyen Van A");
+        inactive.setFullName("Nguyen Duc Khai");
         inactive.setStatus("INACTIVE");
         when(residentService.deactivateResident(1L)).thenReturn(inactive);
 
