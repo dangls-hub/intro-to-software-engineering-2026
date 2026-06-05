@@ -56,4 +56,12 @@ public class User {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    /* 
+    public String getUsername() {
+        return username;
+    }
+    */
+
+
 }
