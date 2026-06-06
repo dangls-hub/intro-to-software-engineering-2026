@@ -76,7 +76,7 @@ class ResidentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.content[0].fullName").value("Nguyen Van A"));
+                .andExpect(jsonPath("$.data.content[0].fullName").value("Nguyen Duc Khai"));
     }
 
     @Test
