@@ -129,23 +129,23 @@
 | Hạng mục | Người thực hiện | Trạng thái |
 |---|---|---|
 | `DashboardController.java` (API stats) | Đỗ Hải Đăng | ⬜ Todo |
-| Fix bug `common/security/` & `common/exception/` | Đỗ Hải Đăng | ⬜ Todo |
+| Fix bug `common/security/` & `common/exception/` | Đỗ Hải Đăng | ✅ Done |
 | `docs/06-reports/bao-cao-tuan-3.md` | Đỗ Hải Đăng | ⬜ Todo |
-| `docs/05-deployment/README.md` (hướng dẫn hoàn chỉnh) | Đỗ Hải Đăng | ⬜ Todo |
-| Fix bug JWT / 403 / 401 | Hoàng Gia Huy | ⬜ Todo |
-| API `GET /api/auth/me` | Hoàng Gia Huy | ⬜ Todo |
+| `docs/05-deployment/README.md` (hướng dẫn hoàn chỉnh) | Đỗ Hải Đăng | ✅ Done |
+| Fix bug JWT / 403 / 401 | Hoàng Gia Huy | ✅ Done |
+| API `GET /api/auth/me` | Hoàng Gia Huy | ⚠️ Cần kiểm tra |
 | Tìm kiếm/lọc API căn hộ | Hoàng Gia Huy | ⬜ Todo |
-| `AuthControllerTest.java`, `ApartmentControllerTest.java` | Hoàng Gia Huy | ⬜ Todo |
-| Fix bug resident ↔ apartment cascade | Nguyễn Đức Khải | ⬜ Todo |
-| Tìm kiếm/lọc API cư dân | Nguyễn Đức Khải | ⬜ Todo |
-| `ResidentControllerTest.java` | Nguyễn Đức Khải | ⬜ Todo |
-| `features/fees/` (pages + api + components) | Trần Đình Nam | ⬜ Todo |
-| `features/payments/` (pages + api) | Trần Đình Nam | ⬜ Todo |
-| `features/dashboard/DashboardPage.jsx` | Trần Đình Nam | ⬜ Todo |
-| Loading/error state toàn bộ màn hình | Trần Đình Nam | ⬜ Todo |
-| Responsive layout | Trần Đình Nam | ⬜ Todo |
-| `module/payment/` (Entity → Controller) | Phạm Việt Tiến | ⬜ Todo |
-| `database/migrations/V5__create_payments_table.sql` | Phạm Việt Tiến | ⬜ Todo |
-| `database/seed/` fees, payments | Phạm Việt Tiến | ⬜ Todo |
-| Checklist test (`docs/04-testing/checklist.md`) | Phạm Việt Tiến | ⬜ Todo |
+| `AuthControllerTest.java`, `ApartmentControllerTest.java` | Hoàng Gia Huy | ✅ Done |
+| Fix bug resident ↔ apartment cascade | Nguyễn Đức Khải | ⚠️ Cần kiểm tra |
+| Tìm kiếm/lọc API cư dân | Nguyễn Đức Khải | ⚠️ Cần kiểm tra |
+| `ResidentControllerTest.java` | Nguyễn Đức Khải | ✅ Done |
+| `features/fees/` (pages + api + components) | Trần Đình Nam | ✅ Done |
+| `features/payments/` (pages + api) | Trần Đình Nam | ✅ Done |
+| `features/dashboard/DashboardPage.jsx` | Trần Đình Nam | ✅ Done |
+| Loading/error state toàn bộ màn hình | Trần Đình Nam | ✅ Done |
+| Responsive layout | Trần Đình Nam | ⚠️ Cần kiểm tra |
+| `module/payment/` (Entity → Controller) | Phạm Việt Tiến | ✅ Done |
+| `database/migrations/V5__create_payments_table.sql` | Phạm Việt Tiến | ✅ Done |
+| `database/seed/` fees, payments | Phạm Việt Tiến | ✅ Done |
+| Checklist test (`docs/04-testing/checklist.md`) | Phạm Việt Tiến | ✅ Done (chưa điền kết quả) |
 | Chạy test toàn bộ kịch bản demo | Phạm Việt Tiến | ⬜ Todo |

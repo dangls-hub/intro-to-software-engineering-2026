@@ -164,15 +164,15 @@
 | `common/response/ApiResponse.java` | Đỗ Hải Đăng | ✅ Done |
 | `common/exception/GlobalExceptionHandler.java` | Đỗ Hải Đăng | ✅ Done |
 | `module/fee/` (Entity → Controller) | Đỗ Hải Đăng | ✅ Done |
-| `module/auth/` (Entity → Controller) | Hoàng Gia Huy | ⬜ Todo |
-| `module/apartment/` (Entity → Controller) | Hoàng Gia Huy | ⬜ Todo |
-| `module/resident/` (Entity → Controller) | Nguyễn Đức Khải | ⬜ Todo |
-| `module/resident/Household` (Entity → Controller) | Nguyễn Đức Khải | ⬜ Todo |
-| `src/lib/axiosClient.js` | Trần Đình Nam | ⬜ Todo |
-| `src/store/authStore.js` | Trần Đình Nam | ⬜ Todo |
-| `features/auth/` kết nối API | Trần Đình Nam | ⬜ Todo |
-| `features/apartments/` (pages + api) | Trần Đình Nam | ⬜ Todo |
-| `features/residents/` (pages + api) | Trần Đình Nam | ⬜ Todo |
-| `src/routes/AppRouter.jsx` (PrivateRoute) | Trần Đình Nam | ⬜ Todo |
-| `database/migrations/` V1-V4 | Phạm Việt Tiến | ⬜ Todo |
-| `database/seed/` users, apartments, residents | Phạm Việt Tiến | ⬜ Todo |
+| `module/auth/` (Entity → Controller) | Hoàng Gia Huy | ✅ Done |
+| `module/apartment/` (Entity → Controller) | Hoàng Gia Huy | ✅ Done |
+| `module/resident/` (Entity → Controller) | Nguyễn Đức Khải | ✅ Done |
+| `module/resident/Household` (Entity → Controller) | Nguyễn Đức Khải | ✅ Done |
+| `src/lib/apiClient.js` | Trần Đình Nam | ✅ Done |
+| `src/store/authStore.jsx` | Trần Đình Nam | ✅ Done |
+| `features/auth/` kết nối API | Trần Đình Nam | ✅ Done |
+| `features/apartments/` (pages + api) | Trần Đình Nam | ✅ Done |
+| `features/residents/` (pages + api) | Trần Đình Nam | ✅ Done |
+| `src/routes/AppRouter.jsx` (PrivateRoute) | Trần Đình Nam | ✅ Done |
+| `database/migrations/` V1-V4 | Phạm Việt Tiến | ✅ Done |
+| `database/seed/` users, apartments, residents | Phạm Việt Tiến | ✅ Done |
