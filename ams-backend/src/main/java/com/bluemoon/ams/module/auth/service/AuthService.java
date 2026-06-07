@@ -14,7 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import com.bluemoon.ams.module.resident.entity.Resident;
+import com.bluemoon.ams.module.resident.entity.ResidentStatus;
+import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final ResidentRepository residentRepository;
 
     /**
      * Xác thực user và trả JWT token
@@ -47,6 +52,22 @@ public class AuthService {
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
             log.info("Successful login for user: {}", request.getUsername());
 
+            Long apartmentId = null;
+            String apartmentCode = null;
+            if (user.getRole() == Role.RESIDENT) {
+                List<Resident> residents = residentRepository.findByFullName(user.getFullName());
+                if (residents != null && !residents.isEmpty()) {
+                    Resident r = residents.stream()
+                            .filter(res -> res.getStatus() == ResidentStatus.ACTIVE)
+                            .findFirst()
+                            .orElse(residents.get(0));
+                    if (r.getApartment() != null) {
+                        apartmentId = r.getApartment().getId();
+                        apartmentCode = r.getApartment().getRoomNumber();
+                    }
+                }
+            }
+
             return LoginResponse.builder()
                     .token(token)
                     .userId(user.getId())
@@ -54,6 +75,8 @@ public class AuthService {
                     .email(user.getEmail())
                     .fullName(user.getFullName())
                     .role(user.getRole().toString())
+                    .apartmentId(apartmentId)
+                    .apartmentCode(apartmentCode)
                     .message("Đăng nhập thành công")
                     .build();
         } catch (RuntimeException e) {

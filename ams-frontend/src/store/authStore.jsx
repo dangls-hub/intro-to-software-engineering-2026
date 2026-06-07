@@ -10,6 +10,7 @@
 
 import { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
 import { getAuthToken, setAuthToken, clearAuthToken } from '../lib/apiClient';
+import { fetchMe } from '../features/auth/api/authApi';
 
 const AUTH_USER_KEY = 'bluemoon_auth_user';
 
@@ -60,7 +61,7 @@ function authReducer(state, action) {
 
     default:
       return state;
-  }
+    }
 }
 
 // ── Context ──────────────────────────────────────────────
@@ -97,6 +98,25 @@ export function AuthProvider({ children }) {
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
     dispatch({ type: ActionTypes.UPDATE_USER, payload: userData });
   }, [state.user]);
+
+  // Sync fresh user data from server on startup/reload
+  useEffect(() => {
+    if (state.token && state.isAuthenticated) {
+      fetchMe()
+        .then((freshUser) => {
+          if (freshUser) {
+            updateUser(freshUser);
+          }
+        })
+        .catch((err) => {
+          console.error('Error verifying user session:', err);
+          if (err.status === 401 || err.status === 403) {
+            logout();
+          }
+        });
+    }
+  }, [state.token, state.isAuthenticated, logout, updateUser]);
+
 
   // Listen for storage changes across tabs
   useEffect(() => {

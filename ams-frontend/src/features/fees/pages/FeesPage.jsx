@@ -3,6 +3,8 @@ import { Edit3, Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
 import { createFee, deleteFee, fetchFees, updateFee } from '../api/feesApi';
 import { fetchApartments } from '../../apartments/api/apartmentsApi';
 import { useToast } from '../../../components/ui/Toast';
+import { useAuth } from '../../../store/authStore';
+import { apiClient } from '../../../lib/apiClient';
 
 const emptyForm = {
   name: '', type: 'MANDATORY', amount: '', dueDate: '',
@@ -18,7 +20,9 @@ const statusMap = {
 };
 
 function FeesPage({ role }) {
+  const { user } = useAuth();
   const isResident = role === 'RESIDENT';
+  const residentAptId = user?.apartmentId;
   const [fees, setFees] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -32,7 +36,15 @@ function FeesPage({ role }) {
 
   async function loadData() {
     setIsLoading(true); setError('');
-    const [fRes, aRes] = await Promise.allSettled([fetchFees(), fetchApartments()]);
+    
+    let feesPromise;
+    if (isResident && residentAptId) {
+      feesPromise = apiClient(`/fees/by-apartment/${residentAptId}`).then((res) => res.data || []);
+    } else {
+      feesPromise = fetchFees();
+    }
+
+    const [fRes, aRes] = await Promise.allSettled([feesPromise, fetchApartments()]);
     if (fRes.status === 'fulfilled') setFees(fRes.value);
     else { setFees([]); setError(fRes.reason?.message || 'Không tải được danh sách khoản thu.'); }
     if (aRes.status === 'fulfilled') setApartments(aRes.value);
@@ -83,9 +95,14 @@ function FeesPage({ role }) {
 
   const fmt = (n) => n != null ? Number(n).toLocaleString('vi-VN') + ' đ' : '—';
 
+  const getApartmentRoomNumber = (aptId) => {
+    const apt = apartments.find((a) => a.id === aptId);
+    return apt ? apt.roomNumber : aptId || '—';
+  };
+
   const filtered = fees.filter((f) =>
     (f.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (f.apartment?.code || '').toLowerCase().includes(search.toLowerCase())
+    (getApartmentRoomNumber(f.apartmentId) || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -135,7 +152,7 @@ function FeesPage({ role }) {
                       <td style={{ fontWeight: 600 }}>{f.name || '—'}</td>
                       <td>{typeMap[f.type] || f.type || '—'}</td>
                       <td style={{ fontWeight: 700 }}>{fmt(f.amount)}</td>
-                      <td>{f.apartment?.code || f.apartmentId || '—'}</td>
+                      <td>{getApartmentRoomNumber(f.apartmentId)}</td>
                       <td>{f.dueDate || '—'}</td>
                       <td><span className={`status-badge ${st.cls}`}>{st.label}</span></td>
                       {!isResident && (
@@ -174,7 +191,7 @@ function FeesPage({ role }) {
               <label>Căn hộ
                 <select name="apartmentId" onChange={updateField} value={form.apartmentId}>
                   <option value="">— Tất cả —</option>
-                  {apartments.map((a) => <option key={a.id || a.code} value={a.id}>{a.code}</option>)}
+                  {apartments.map((a) => <option key={a.id} value={a.id}>{a.roomNumber}</option>)}
                 </select>
               </label>
               <label>Hạn nộp <input name="dueDate" onChange={updateField} type="date" value={form.dueDate} /></label>

@@ -25,6 +25,8 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
 
     List<Resident> findByApartmentId(Long apartmentId);
 
+    List<Resident> findByFullName(String fullName);
+
     // Tìm theo từ khoá theo tên, CCCD và sdt
     @Query("SELECT r FROM Resident r WHERE " +
            "LOWER(r.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
