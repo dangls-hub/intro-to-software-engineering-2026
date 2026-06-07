@@ -17,4 +17,6 @@ public class LoginResponse {
     private String fullName;
     private String role;               // ADMIN, STAFF hoặc RESIDENT
     private String message;
+    private Long apartmentId;
+    private String apartmentCode;
 }

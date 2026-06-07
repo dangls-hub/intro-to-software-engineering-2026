@@ -437,6 +437,8 @@ tbody tr:last-child td {
   left: 0;
   width: 100%;
   height: auto;
+  max-height: 100vh;
+  overflow-y: auto;
   z-index: 50;
   transform: translateY(-100%);
   transition: transform var(--duration-slow) var(--ease);
@@ -529,7 +531,7 @@ tbody tr:last-child td {
   font-weight: 800;
   font-size: 1.05rem;
   color: var(--text-heading);
-  padding: 4px 6px;
+  padding: 4px 6px 4px 52px; /* Leave space for mobile hamburger toggle */
   margin-bottom: 8px;
 }
 
@@ -1737,6 +1739,10 @@ code {
 
 @media (min-width: 1024px) {
   h1 { font-size: 1.85rem; }
+
+  .brand {
+    padding: 4px 6px;
+  }
 
   .app-shell { flex-direction: row; }
 

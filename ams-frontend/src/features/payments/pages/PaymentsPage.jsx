@@ -3,14 +3,25 @@ import { Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
 import { createPayment, deletePayment, fetchPayments } from '../api/paymentsApi';
 import { fetchFees } from '../../fees/api/feesApi';
 import { useToast } from '../../../components/ui/Toast';
+import { useAuth } from '../../../store/authStore';
+import { apiClient } from '../../../lib/apiClient';
 
-const emptyForm = { feeId: '', amount: '', method: 'CASH', note: '' };
+const emptyForm = { feeId: '', amount: '', paymentMethod: 'CASH', note: '' };
 
-const methodMap = { CASH: 'Tiền mặt', TRANSFER: 'Chuyển khoản', QR: 'QR Code' };
+const methodMap = {
+  CASH: 'Tiền mặt',
+  TRANSFER: 'Chuyển khoản',
+  BANK_TRANSFER: 'Chuyển khoản',
+  QR: 'QR Code',
+  MOMO: 'Ví MoMo',
+  VNPAY: 'VNPay',
+};
 const statusCls = { PAID: 'paid', PENDING: 'pending' };
 
 function PaymentsPage({ role }) {
+  const { user } = useAuth();
   const isResident = role === 'RESIDENT';
+  const residentAptId = user?.apartmentId;
   const [payments, setPayments] = useState([]);
   const [fees, setFees] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -23,7 +34,15 @@ function PaymentsPage({ role }) {
 
   async function loadData() {
     setIsLoading(true); setError('');
-    const [pRes, fRes] = await Promise.allSettled([fetchPayments(), fetchFees()]);
+    
+    let paymentsPromise;
+    if (isResident && residentAptId) {
+      paymentsPromise = apiClient(`/payments/by-apartment/${residentAptId}`).then((res) => res.data || []);
+    } else {
+      paymentsPromise = fetchPayments();
+    }
+
+    const [pRes, fRes] = await Promise.allSettled([paymentsPromise, fetchFees()]);
     if (pRes.status === 'fulfilled') setPayments(pRes.value);
     else { setPayments([]); setError(pRes.reason?.message || 'Không tải được danh sách thanh toán.'); }
     if (fRes.status === 'fulfilled') setFees(fRes.value);
@@ -39,9 +58,10 @@ function PaymentsPage({ role }) {
   async function handleSubmit(e) {
     e.preventDefault(); setIsSubmitting(true); setError('');
     const payload = {
-      ...form,
       feeId: form.feeId === '' ? null : Number(form.feeId),
       amount: form.amount === '' ? null : Number(form.amount),
+      paymentMethod: form.paymentMethod,
+      note: form.note,
     };
     try {
       await createPayment(payload);
@@ -61,8 +81,8 @@ function PaymentsPage({ role }) {
   const fmt = (n) => n != null ? Number(n).toLocaleString('vi-VN') + ' đ' : '—';
 
   const filtered = payments.filter((p) =>
-    (p.fee?.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.method || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.feeName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.paymentMethod || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.note || '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -108,9 +128,9 @@ function PaymentsPage({ role }) {
               <tbody>
                 {filtered.map((p) => (
                   <tr key={p.id}>
-                    <td style={{ fontWeight: 600 }}>{p.fee?.name || p.feeId || '—'}</td>
+                    <td style={{ fontWeight: 600 }}>{p.feeName || p.feeId || '—'}</td>
                     <td style={{ fontWeight: 700 }}>{fmt(p.amount)}</td>
-                    <td>{methodMap[p.method] || p.method || '—'}</td>
+                    <td>{methodMap[p.paymentMethod] || p.paymentMethod || '—'}</td>
                     <td>{p.paymentDate || p.createdAt || '—'}</td>
                     <td>{p.note || '—'}</td>
                     <td><span className={`status-badge ${statusCls[p.status] || 'active'}`}>{p.status === 'PAID' ? 'Đã thanh toán' : 'Đã ghi nhận'}</span></td>
@@ -145,10 +165,11 @@ function PaymentsPage({ role }) {
               </label>
               <label>Số tiền thanh toán (VNĐ) <input name="amount" onChange={updateField} type="number" min="0" required value={form.amount} placeholder="500000" /></label>
               <label>Phương thức
-                <select name="method" onChange={updateField} value={form.method}>
+                <select name="paymentMethod" onChange={updateField} value={form.paymentMethod}>
                   <option value="CASH">Tiền mặt</option>
-                  <option value="TRANSFER">Chuyển khoản</option>
-                  <option value="QR">QR Code</option>
+                  <option value="BANK_TRANSFER">Chuyển khoản</option>
+                  <option value="MOMO">Ví MoMo</option>
+                  <option value="VNPAY">VNPay</option>
                 </select>
               </label>
               <label>Ghi chú <input name="note" onChange={updateField} value={form.note} placeholder="Ghi chú thêm..." /></label>

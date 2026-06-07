@@ -13,7 +13,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import com.bluemoon.ams.module.resident.entity.Resident;
+import com.bluemoon.ams.module.resident.entity.ResidentStatus;
+import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -22,6 +26,7 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
     private final JwtUtil jwtUtil;
+    private final ResidentRepository residentRepository;
 
     /**
      * API đăng nhập
@@ -101,12 +106,30 @@ public class AuthController {
         // Lấy thông tin user từ database
         User user = authService.getUserByUsername(username);
 
+        Long apartmentId = null;
+        String apartmentCode = null;
+        if (user.getRole() == com.bluemoon.ams.module.auth.entity.Role.RESIDENT) {
+            List<Resident> residents = residentRepository.findByFullName(user.getFullName());
+            if (residents != null && !residents.isEmpty()) {
+                Resident r = residents.stream()
+                        .filter(res -> res.getStatus() == ResidentStatus.ACTIVE)
+                        .findFirst()
+                        .orElse(residents.get(0));
+                if (r.getApartment() != null) {
+                    apartmentId = r.getApartment().getId();
+                    apartmentCode = r.getApartment().getRoomNumber();
+                }
+            }
+        }
+
         UserInfoResponse response = UserInfoResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName() != null ? user.getFullName() : "")
                 .role(user.getRole().toString())
+                .apartmentId(apartmentId)
+                .apartmentCode(apartmentCode)
                 .build();
 
         return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));

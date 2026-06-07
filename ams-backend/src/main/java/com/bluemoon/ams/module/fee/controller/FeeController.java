@@ -64,6 +64,15 @@ public class FeeController {
     }
 
     /**
+     * GET /api/v1/fees/by-apartment/{apartmentId} — Lấy danh sách khoản thu theo căn hộ.
+     */
+    @GetMapping("/by-apartment/{apartmentId}")
+    public ResponseEntity<ApiResponse<List<FeeResponse>>> getFeesByApartment(@PathVariable Long apartmentId) {
+        List<FeeResponse> fees = feeService.getFeesByApartmentId(apartmentId);
+        return ResponseEntity.ok(ApiResponse.ok(fees));
+    }
+
+    /**
      * DELETE /api/v1/fees/{id} — Xóa khoản thu.
      */
     @DeleteMapping("/{id}")
