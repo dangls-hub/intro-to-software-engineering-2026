@@ -128,9 +128,9 @@
 
 | Hạng mục | Người thực hiện | Trạng thái |
 |---|---|---|
-| `DashboardController.java` (API stats) | Đỗ Hải Đăng | ⬜ Todo |
+| `DashboardController.java` (API stats) | Đỗ Hải Đăng | ✅ Done |
 | Fix bug `common/security/` & `common/exception/` | Đỗ Hải Đăng | ✅ Done |
-| `docs/06-reports/bao-cao-tuan-3.md` | Đỗ Hải Đăng | ⬜ Todo |
+| `docs/06-reports/bao-cao-tuan-3.md` | Đỗ Hải Đăng | ✅ Done |
 | `docs/05-deployment/README.md` (hướng dẫn hoàn chỉnh) | Đỗ Hải Đăng | ✅ Done |
 | Fix bug JWT / 403 / 401 | Hoàng Gia Huy | ✅ Done |
 | API `GET /api/auth/me` | Hoàng Gia Huy | ⚠️ Cần kiểm tra |

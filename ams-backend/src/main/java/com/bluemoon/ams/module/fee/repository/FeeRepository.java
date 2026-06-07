@@ -21,4 +21,9 @@ public interface FeeRepository extends JpaRepository<Fee, Long> {
      * Tìm tất cả khoản thu theo trạng thái.
      */
     List<Fee> findByStatus(String status);
+
+    /**
+     * Đếm số khoản thu theo trạng thái (dùng cho Dashboard — tỷ lệ thanh toán).
+     */
+    long countByStatus(String status);
 }
