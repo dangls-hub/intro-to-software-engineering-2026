@@ -92,3 +92,6 @@ ehthumbs.db
 *.temp
 *.cache
 .cache/
+.webp
+.png
+,md

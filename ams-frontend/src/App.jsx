@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   BrowserRouter,
-  NavLink,
   Navigate,
   Route,
   Routes,
@@ -12,19 +11,16 @@ import {
   CreditCard,
   Home,
   LayoutDashboard,
-  LogOut,
-  Menu,
-  Moon,
   Receipt,
-  Sun,
   Users,
-  X,
 } from 'lucide-react';
 
 import { AuthProvider, useAuth } from './store/authStore';
 import { ThemeProvider, useTheme } from './store/themeStore';
 import { ToastProvider } from './components/ui/Toast';
 import { PrivateRoute, PublicRoute } from './routes/AppRouter';
+import Sidebar from './components/layout/Sidebar';
+import AppHeader from './components/layout/AppHeader';
 
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
@@ -62,116 +58,62 @@ function AppLayout() {
   const displayName = user?.fullName || user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const toggleSidebar = useCallback(() => setSidebarOpen(v => !v), []);
 
-  // Close sidebar on route change
-  useEffect(() => {
-    closeSidebar();
-  }, [location.pathname, closeSidebar]);
+  useEffect(() => { closeSidebar(); }, [location.pathname, closeSidebar]);
 
-  // Close sidebar on Escape key
   useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape' && sidebarOpen) closeSidebar();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    if (!sidebarOpen) return;
+    function onKey(e) { if (e.key === 'Escape') closeSidebar(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [sidebarOpen, closeSidebar]);
 
-  // Prevent body scroll when sidebar open on mobile
   useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
   return (
     <main className="app-shell">
-      {/* Mobile hamburger toggle */}
-      <button
-        className="sidebar-toggle"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        type="button"
-        aria-label={sidebarOpen ? 'Đóng menu' : 'Mở menu'}
-      >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
-      {/* Mobile backdrop */}
-      <div
-        className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`}
-        onClick={closeSidebar}
-        aria-hidden="true"
+      <Sidebar
+        navItems={navItems}
+        displayName={displayName}
+        role={role}
+        sidebarOpen={sidebarOpen}
+        onClose={closeSidebar}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={logout}
       />
 
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="brand">
-          <span className="brand-mark">
-            <Building2 size={20} aria-hidden="true" />
-          </span>
-          <div>
-            <span>BlueMoon AMS</span>
-            <small>{displayName}</small>
-            <small className="role-tag" data-role={role}>{
-              role === 'ADMIN' ? 'Quản trị viên' :
-              role === 'STAFF' ? 'Nhân viên' : 'Cư dân'
-            }</small>
-          </div>
-        </div>
-
-        <nav className="nav-list" aria-label="Điều hướng chính">
-          {navItems.map(({ to, label, icon: Icon, end }) => (
-            <NavLink className="nav-link" end={end} key={to} to={to}>
-              <Icon size={18} aria-hidden="true" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="sidebar-bottom">
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            type="button"
-            aria-label={theme === 'dark' ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
-          >
-            {theme === 'dark' ? (
-              <><Sun size={16} aria-hidden="true" /> Chế độ sáng</>
-            ) : (
-              <><Moon size={16} aria-hidden="true" /> Chế độ tối</>
-            )}
-          </button>
-
-          <button className="logout-button" onClick={logout} type="button">
-            <LogOut size={18} aria-hidden="true" />
-            Đăng xuất
-          </button>
-        </div>
-      </aside>
-
-      <section className="content">
-        {isResident ? (
-          <Routes>
-            <Route element={<ResidentDashboardPage />} index />
-            <Route element={<FeesPage role={role} />} path="my-fees" />
-            <Route element={<PaymentsPage role={role} />} path="my-payments" />
-            <Route element={<Navigate replace to="/" />} path="*" />
-          </Routes>
-        ) : (
-          <Routes>
-            <Route element={<DashboardPage />} index />
-            <Route element={<ApartmentsPage />} path="apartments" />
-            <Route element={<ResidentsPage />} path="residents" />
-            <Route element={<FeesPage role={role} />} path="fees" />
-            <Route element={<PaymentsPage role={role} />} path="payments" />
-            <Route element={<Navigate replace to="/" />} path="*" />
-          </Routes>
-        )}
-      </section>
+      <div className="content-shell">
+        <AppHeader
+          displayName={displayName}
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={toggleSidebar}
+        />
+        <section className="content">
+          {isResident ? (
+            <Routes>
+              <Route element={<ResidentDashboardPage />} index />
+              <Route element={<FeesPage role={role} />} path="my-fees" />
+              <Route element={<PaymentsPage role={role} />} path="my-payments" />
+              <Route element={<Navigate replace to="/" />} path="*" />
+            </Routes>
+          ) : (
+            <Routes>
+              <Route element={<DashboardPage />} index />
+              <Route element={<ApartmentsPage />} path="apartments" />
+              <Route element={<ResidentsPage />} path="residents" />
+              <Route element={<FeesPage role={role} />} path="fees" />
+              <Route element={<PaymentsPage role={role} />} path="payments" />
+              <Route element={<Navigate replace to="/" />} path="*" />
+            </Routes>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

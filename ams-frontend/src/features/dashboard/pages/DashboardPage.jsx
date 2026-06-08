@@ -1,15 +1,4 @@
-import { useEffect, useState } from 'react';
-import {
-  Building2,
-  CreditCard,
-  Home,
-  Receipt,
-  RefreshCcw,
-  Users,
-  Activity,
-  TrendingUp,
-  Clock,
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../../lib/apiClient';
 import { fetchDashboardStats } from '../api/dashboardApi';
 import { fetchApartments } from '../../apartments/api/apartmentsApi';
@@ -18,13 +7,19 @@ import { fetchFees } from '../../fees/api/feesApi';
 import { fetchPayments } from '../../payments/api/paymentsApi';
 import { useToast } from '../../../components/ui/Toast';
 
+import DashboardHero from '../components/DashboardHero';
+import MetricsGrid from '../components/MetricsGrid';
+import ApartmentsPortfolio from '../components/ApartmentsPortfolio';
+import SystemStatus from '../components/SystemStatus';
+
 const initialMetrics = { apartments: 0, residents: 0, fees: 0, payments: 0 };
 
 function DashboardPage() {
-  const [metrics, setMetrics] = useState(initialMetrics);
-  const [health, setHealth] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [metrics,    setMetrics]    = useState(initialMetrics);
+  const [health,     setHealth]     = useState(null);
+  const [isLoading,  setIsLoading]  = useState(true);
+  const [error,      setError]      = useState('');
+  const [apartments, setApartments] = useState([]);
   const showToast = useToast();
 
   async function loadDashboard() {
@@ -32,41 +27,40 @@ function DashboardPage() {
     setError('');
 
     try {
-      // Kiểm tra health check
       const healthRes = await apiClient('/health', { token: null }).then(() => true).catch(() => false);
       setHealth(healthRes);
 
-      // Thử gọi dashboard stats API trước
-      const dashStats = await fetchDashboardStats();
+      const [statsResult, aptsResult] = await Promise.allSettled([
+        fetchDashboardStats(),
+        fetchApartments(),
+      ]);
 
-      if (dashStats) {
-        // Backend đã có Dashboard API
+      if (statsResult.status === 'fulfilled' && statsResult.value) {
+        const d = statsResult.value;
         setMetrics({
-          apartments: dashStats.totalApartments ?? dashStats.apartments ?? 0,
-          residents: dashStats.totalResidents ?? dashStats.residents ?? 0,
-          fees: dashStats.totalFees ?? dashStats.fees ?? 0,
-          payments: dashStats.totalPayments ?? dashStats.payments ?? 0,
+          apartments: d.totalApartments ?? d.apartments ?? 0,
+          residents:  d.totalResidents  ?? d.residents  ?? 0,
+          fees:       d.totalFees       ?? d.fees       ?? 0,
+          payments:   d.totalPayments   ?? d.payments   ?? 0,
         });
       } else {
-        // Fallback: đếm từ từng API riêng lẻ
-        const [aptsRes, resRes, feesRes, payRes] = await Promise.allSettled([
-          fetchApartments(),
+        const [resRes, feesRes, payRes] = await Promise.allSettled([
           fetchResidents(),
           fetchFees(),
           fetchPayments(),
         ]);
-
         setMetrics({
-          apartments: aptsRes.status === 'fulfilled' ? aptsRes.value.length : 0,
-          residents: resRes.status === 'fulfilled' ? resRes.value.length : 0,
-          fees: feesRes.status === 'fulfilled' ? feesRes.value.length : 0,
-          payments: payRes.status === 'fulfilled' ? payRes.value.length : 0,
+          apartments: aptsResult.status === 'fulfilled' ? aptsResult.value.length : 0,
+          residents:  resRes.status    === 'fulfilled' ? resRes.value.length    : 0,
+          fees:       feesRes.status   === 'fulfilled' ? feesRes.value.length   : 0,
+          payments:   payRes.status    === 'fulfilled' ? payRes.value.length    : 0,
         });
+        const failed = [resRes, feesRes, payRes].find(r => r.status === 'rejected');
+        if (failed) setError(failed.reason?.message || 'Không tải được một số dữ liệu.');
+      }
 
-        const failed = [aptsRes, resRes, feesRes, payRes].find((r) => r.status === 'rejected');
-        if (failed) {
-          setError(failed.reason?.message || 'Không tải được một số dữ liệu.');
-        }
+      if (aptsResult.status === 'fulfilled') {
+        setApartments(aptsResult.value.slice(0, 6));
       }
     } catch (err) {
       setError(err.message || 'Không tải được dữ liệu dashboard.');
@@ -76,81 +70,34 @@ function DashboardPage() {
     setIsLoading(false);
   }
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useEffect(() => { loadDashboard(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cards = [
-    { label: 'Căn hộ', value: metrics.apartments, icon: Home, color: 'blue' },
-    { label: 'Cư dân', value: metrics.residents, icon: Users, color: 'green' },
-    { label: 'Khoản thu', value: metrics.fees, icon: Receipt, color: 'purple' },
-    { label: 'Thanh toán', value: metrics.payments, icon: CreditCard, color: 'amber' },
-  ];
-
-  const now = new Date();
-  const greeting =
-    now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+  const now      = new Date();
+  const greeting = useMemo(() =>
+    now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối',
+  []); // eslint-disable-line react-hooks/exhaustive-deps
+  const dateStr  = now.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <>
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">
-            <TrendingUp size={14} />
-            Tổng quan hệ thống
-          </p>
-          <h1>{greeting} 👋</h1>
-        </div>
-        <button className="secondary-button" onClick={loadDashboard} type="button">
-          <RefreshCcw size={17} aria-hidden="true" />
-          Tải lại
-        </button>
-      </header>
-
-      {error && <div className="alert warning">{error}</div>}
-
-      <section className="metric-grid" aria-label="Thống kê nhanh" aria-busy={isLoading}>
-        {cards.map(({ label, value, icon: Icon, color }, index) => (
-          <article className="metric-card" key={label} style={{ '--i': index }}>
-            <div className={`metric-icon ${color}`}>
-              <Icon size={24} aria-hidden="true" />
-            </div>
-            <div>
-              <div className="metric-label">{label}</div>
-              <div className="metric-value">{isLoading ? '—' : value}</div>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="workspace-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Trạng thái hệ thống</p>
-            <h2>Kết nối Backend</h2>
-          </div>
-          <div className="system-status-row">
-            <Activity
-              size={18}
-              aria-hidden="true"
-              style={{ color: health ? 'var(--success)' : 'var(--danger)' }}
-            />
-            <span className={`status-badge ${health ? 'active' : 'inactive'}`}>
-              {health === null
-                ? 'Đang kiểm tra...'
-                : health
-                  ? 'Backend sẵn sàng'
-                  : 'Không kết nối được'}
-            </span>
-          </div>
-        </div>
-        <p className="muted-text system-description">
-          <Clock size={16} />
-          Hệ thống quản lý chung cư BlueMoon — quản lý căn hộ, cư dân, khoản thu và thanh toán.
-          Dữ liệu được đồng bộ từ backend Spring Boot và lưu trữ trên MySQL.
-        </p>
-      </section>
-    </>
+    <div className="ap-root dashboard-bleed">
+      <DashboardHero
+        greeting={greeting}
+        dateStr={dateStr}
+        error={error}
+        onRefresh={loadDashboard}
+      />
+      <MetricsGrid
+        metrics={metrics}
+        isLoading={isLoading}
+      />
+      <ApartmentsPortfolio
+        apartments={apartments}
+        isLoading={isLoading}
+      />
+      <SystemStatus
+        health={health}
+      />
+    </div>
   );
 }
 
