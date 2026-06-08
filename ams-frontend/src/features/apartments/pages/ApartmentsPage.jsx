@@ -223,13 +223,13 @@ function ApartmentsPage() {
                     const st = statusMap[apartment.status] || { label: apartment.status || '—', cls: 'inactive' };
                     return (
                       <tr key={apartment.id || apartment.roomNumber}>
-                        <td style={{ fontWeight: 700 }}>{apartment.roomNumber || '—'}</td>
-                        <td>{apartment.floor || '—'}</td>
-                        <td>{apartment.area != null ? `${apartment.area} m²` : '—'}</td>
-                        <td>
+                        <td data-label="Mã căn hộ" style={{ fontWeight: 700 }}>{apartment.roomNumber || '—'}</td>
+                        <td data-label="Tầng">{apartment.floor || '—'}</td>
+                        <td data-label="Diện tích">{apartment.area != null ? `${apartment.area} m²` : '—'}</td>
+                        <td data-label="Trạng thái">
                           <span className={`status-badge ${st.cls}`}>{st.label}</span>
                         </td>
-                        <td>
+                        <td data-label="">
                           <div className="row-actions">
                             <button className="icon-button" onClick={() => startEdit(apartment)} title="Sửa" type="button">
                               <Edit3 size={16} aria-hidden="true" />

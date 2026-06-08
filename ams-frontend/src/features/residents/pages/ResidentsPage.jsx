@@ -273,14 +273,14 @@ function ResidentsPage() {
                     const st = statusMap[resident.status] || { label: resident.status || '—', cls: 'inactive' };
                     return (
                       <tr key={resident.id || resident.identityNumber || resident.fullName}>
-                        <td style={{ fontWeight: 700 }}>{resident.fullName || '—'}</td>
-                        <td>{resident.identityNumber || '—'}</td>
-                        <td>{resident.phone || '—'}</td>
-                        <td>{getApartmentLabel(resident)}</td>
-                        <td>
+                        <td data-label="Họ tên" style={{ fontWeight: 700 }}>{resident.fullName || '—'}</td>
+                        <td data-label="Định danh">{resident.identityNumber || '—'}</td>
+                        <td data-label="Điện thoại">{resident.phone || '—'}</td>
+                        <td data-label="Căn hộ">{getApartmentLabel(resident)}</td>
+                        <td data-label="Trạng thái">
                           <span className={`status-badge ${st.cls}`}>{st.label}</span>
                         </td>
-                        <td>
+                        <td data-label="">
                           <div className="row-actions">
                             <button className="icon-button" onClick={() => startEdit(resident)} title="Sửa" type="button">
                               <Edit3 size={16} aria-hidden="true" />

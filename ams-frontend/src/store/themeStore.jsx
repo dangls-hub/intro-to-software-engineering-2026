@@ -14,7 +14,7 @@ const STORAGE_KEY = 'bluemoon-theme';
 function getInitialTheme() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
+    if (stored === 'light' || stored === 'dark' || stored === 'red') return stored;
   } catch { /* noop */ }
 
   // Default: prefer system preference, fallback to dark
@@ -52,7 +52,11 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => {
+      if (prev === 'dark') return 'light';
+      if (prev === 'light') return 'red';
+      return 'dark';
+    });
   }, []);
 
   return (

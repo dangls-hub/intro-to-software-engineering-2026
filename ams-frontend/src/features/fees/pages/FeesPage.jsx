@@ -132,14 +132,14 @@ function FeesPage({ role }) {
                   const st = statusMap[f.status] || { label: f.status || '—', cls: 'inactive' };
                   return (
                     <tr key={f.id}>
-                      <td style={{ fontWeight: 600 }}>{f.name || '—'}</td>
-                      <td>{typeMap[f.type] || f.type || '—'}</td>
-                      <td style={{ fontWeight: 700 }}>{fmt(f.amount)}</td>
-                      <td>{f.apartment?.code || f.apartmentId || '—'}</td>
-                      <td>{f.dueDate || '—'}</td>
-                      <td><span className={`status-badge ${st.cls}`}>{st.label}</span></td>
+                      <td data-label="Tên" style={{ fontWeight: 600 }}>{f.name || '—'}</td>
+                      <td data-label="Loại">{typeMap[f.type] || f.type || '—'}</td>
+                      <td data-label="Số tiền" style={{ fontWeight: 700 }}>{fmt(f.amount)}</td>
+                      <td data-label="Căn hộ">{f.apartment?.code || f.apartmentId || '—'}</td>
+                      <td data-label="Hạn nộp">{f.dueDate || '—'}</td>
+                      <td data-label="Trạng thái"><span className={`status-badge ${st.cls}`}>{st.label}</span></td>
                       {!isResident && (
-                      <td>
+                      <td data-label="">
                         <div className="row-actions">
                           <button className="icon-button" onClick={() => openEdit(f)} title="Sửa"><Edit3 size={15} /></button>
                           <button className="icon-button danger" onClick={() => handleDelete(f)} title="Xóa"><Trash2 size={15} /></button>

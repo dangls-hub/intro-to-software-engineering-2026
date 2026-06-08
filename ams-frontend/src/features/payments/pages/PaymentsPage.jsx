@@ -108,14 +108,14 @@ function PaymentsPage({ role }) {
               <tbody>
                 {filtered.map((p) => (
                   <tr key={p.id}>
-                    <td style={{ fontWeight: 600 }}>{p.fee?.name || p.feeId || '—'}</td>
-                    <td style={{ fontWeight: 700 }}>{fmt(p.amount)}</td>
-                    <td>{methodMap[p.method] || p.method || '—'}</td>
-                    <td>{p.paymentDate || p.createdAt || '—'}</td>
-                    <td>{p.note || '—'}</td>
-                    <td><span className={`status-badge ${statusCls[p.status] || 'active'}`}>{p.status === 'PAID' ? 'Đã thanh toán' : 'Đã ghi nhận'}</span></td>
+                    <td data-label="Khoản thu" style={{ fontWeight: 600 }}>{p.fee?.name || p.feeId || '—'}</td>
+                    <td data-label="Số tiền" style={{ fontWeight: 700 }}>{fmt(p.amount)}</td>
+                    <td data-label="Phương thức">{methodMap[p.method] || p.method || '—'}</td>
+                    <td data-label="Ngày">{p.paymentDate || p.createdAt || '—'}</td>
+                    <td data-label="Ghi chú">{p.note || '—'}</td>
+                    <td data-label="Trạng thái"><span className={`status-badge ${statusCls[p.status] || 'active'}`}>{p.status === 'PAID' ? 'Đã thanh toán' : 'Đã ghi nhận'}</span></td>
                     {!isResident && (
-                    <td>
+                    <td data-label="">
                       <div className="row-actions">
                         <button className="icon-button danger" onClick={() => handleDelete(p)} title="Xóa"><Trash2 size={15} /></button>
                       </div>

@@ -34,7 +34,7 @@
 | Trần Đình Nam | `features/payments/` — PaymentPage, paymentApi | ✅ Hoàn thành |
 | Trần Đình Nam | `features/dashboard/DashboardPage.jsx` — hiển thị thống kê tổng quan | ✅ Hoàn thành |
 | Trần Đình Nam | Loading spinner, error toast trên tất cả màn hình | ✅ Hoàn thành |
-| Trần Đình Nam | Responsive layout (tablet/mobile) | ⚠️ Cần kiểm tra |
+| Trần Đình Nam | Responsive layout (tablet/mobile) | ✅ Hoàn thành |
 | Phạm Việt Tiến | `module/payment/` — Entity, Repository, DTO, Mapper, Service, Controller đầy đủ | ✅ Hoàn thành |
 | Phạm Việt Tiến | `database/migrations/V5__create_payments_table.sql` | ✅ Hoàn thành |
 | Phạm Việt Tiến | `database/seed/` — dữ liệu mẫu fees và payments trong `sample_data.sql` | ✅ Hoàn thành |
@@ -48,7 +48,7 @@
 | API tìm kiếm/lọc căn hộ chưa hoàn thành | Frontend không thể lọc danh sách căn hộ theo trạng thái/tầng | Hoàng Gia Huy cần bổ sung query parameter vào `ApartmentController` |
 | Chưa chạy checklist test end-to-end đầy đủ | Không xác nhận được toàn bộ luồng demo hoạt động ổn định | Phạm Việt Tiến cần chạy và điền kết quả vào `docs/04-testing/checklist.md` |
 | Cascade xoá resident ↔ apartment cần kiểm tra | Có thể xoá căn hộ gây mất dữ liệu cư dân | Nguyễn Đức Khải cần verify logic cascade và viết test case bổ sung |
-| Responsive layout chưa được kiểm tra kỹ | UI có thể vỡ trên màn hình nhỏ khi demo | Trần Đình Nam cần test trên các viewport tablet/mobile |
+| Responsive layout chưa được kiểm tra kỹ | UI có thể vỡ trên màn hình nhỏ khi demo | ✅ Đã fix — thêm breakpoint XS (<480px), mobile card layout cho bảng, flex-wrap toolbar/actions |
 
 ## Kế hoạch tuần tiếp theo
 

@@ -10,6 +10,7 @@ import {
 import {
   Building2,
   CreditCard,
+  Droplet,
   Home,
   LayoutDashboard,
   LogOut,
@@ -137,10 +138,15 @@ function AppLayout() {
             className="theme-toggle"
             onClick={toggleTheme}
             type="button"
-            aria-label={theme === 'dark' ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
+            aria-label={
+              theme === 'dark' ? 'Chuyển sang sáng' :
+              theme === 'light' ? 'Chuyển sang đỏ' : 'Chuyển sang tối'
+            }
           >
             {theme === 'dark' ? (
               <><Sun size={16} aria-hidden="true" /> Chế độ sáng</>
+            ) : theme === 'light' ? (
+              <><Droplet size={16} aria-hidden="true" /> Chế độ đỏ</>
             ) : (
               <><Moon size={16} aria-hidden="true" /> Chế độ tối</>
             )}
