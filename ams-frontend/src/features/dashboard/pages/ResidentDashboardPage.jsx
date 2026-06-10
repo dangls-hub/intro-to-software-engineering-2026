@@ -105,7 +105,7 @@ function ResidentDashboardPage() {
           backgroundImage: 'url("/images/hero-bg.webp")',
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
-          backgroundColor: TEAL,
+          backgroundColor: 'var(--bg-body)',
         }}
       >
         {/* Gradient overlay — teal from left, fades to transparent right */}
@@ -114,7 +114,7 @@ function ResidentDashboardPage() {
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(to right, #0b1f28 0%, rgba(11,31,40,0.84) 52%, rgba(11,31,40,0.42) 100%)',
+            background: 'linear-gradient(to right, var(--bg-body) 0%, rgba(var(--bg-body-rgb), 0.84) 52%, rgba(var(--bg-body-rgb), 0.42) 100%)',
             zIndex: 0,
           }}
         />
@@ -183,7 +183,7 @@ function ResidentDashboardPage() {
             ...SERIF,
             fontSize: 'clamp(2rem, 5vw, 3.5rem)',
             fontWeight: 800,
-            color: '#f8f5f0',
+            color: 'var(--text-heading)',
             margin: '0 0 8px',
             lineHeight: 1.08,
             letterSpacing: '-0.025em',
@@ -209,7 +209,7 @@ function ResidentDashboardPage() {
 
           {/* Gold divider + context note */}
           <div className="pm-divider" style={{ margin: '0' }}>
-            <p style={{ color: 'rgba(232,224,212,0.4)', fontSize: '0.86rem', fontWeight: 500, margin: 0, flexShrink: 0 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', fontWeight: 500, margin: 0, flexShrink: 0 }}>
               {aptInfo ? `Căn hộ ${aptInfo.code}` : 'Cư dân BlueMoon AMS'}
             </p>
           </div>
@@ -221,12 +221,12 @@ function ResidentDashboardPage() {
           ══════════════════════════════════════════════ */}
       <section
         className="db-section"
-        style={{ background: BEIGE, paddingTop: '52px', paddingBottom: '52px' }}
+        style={{ paddingTop: '52px', paddingBottom: '52px' }}
       >
         <p style={{ ...EYEBROW_LIGHT, marginBottom: '6px' }}>Số liệu của tôi</p>
         <h2 style={{
           ...SERIF,
-          color: TEAL,
+          color: 'var(--text-heading)',
           fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
           fontWeight: 800,
           margin: '0 0 32px',
@@ -276,7 +276,7 @@ function ResidentDashboardPage() {
           backgroundImage: 'url("/images/hero-bg.webp")',
           backgroundSize: 'cover',
           backgroundPosition: 'center bottom',
-          backgroundColor: TEAL,
+          backgroundColor: 'var(--bg-body)',
         }}
       >
         {/* Deep overlay — more opaque for profile card readability */}
@@ -285,7 +285,7 @@ function ResidentDashboardPage() {
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'rgba(11,31,40,0.90)',
+            background: 'rgba(var(--bg-body-rgb), 0.90)',
             zIndex: 0,
           }}
         />
@@ -297,7 +297,7 @@ function ResidentDashboardPage() {
         </p>
         <h2 style={{
           ...SERIF,
-          color: '#f8f5f0',
+          color: 'var(--text-heading)',
           fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
           fontWeight: 800,
           margin: '0 0 28px',
@@ -336,7 +336,7 @@ function ResidentDashboardPage() {
                 {label}
               </span>
               <span style={{
-                color: '#e8e0d4',
+                color: 'var(--text-primary)',
                 fontSize: '0.93rem',
                 fontWeight: 600,
                 textAlign: 'right',

@@ -28,23 +28,23 @@ function ApartmentCard({ apt, idx }) {
     <article
       style={{
         /* True glassmorphism */
-        background:           'rgba(255,255,255,0.06)',
+        background:           'var(--glass-bg)',
         backdropFilter:       'blur(14px) saturate(160%)',
         WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-        border:               '1px solid rgba(255,255,255,0.10)',
-        boxShadow:            '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)',
+        border:               '1px solid var(--glass-border)',
+        boxShadow:            'var(--shadow-md), inset 0 1px 0 var(--glass-border-highlight)',
         borderRadius:         '18px',
         overflow:             'hidden',
         transition:           'border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(201,169,110,0.35)';
-        e.currentTarget.style.boxShadow   = '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,169,110,0.22), inset 0 1px 0 rgba(255,255,255,0.12)';
+        e.currentTarget.style.borderColor = 'var(--border-focus)';
+        e.currentTarget.style.boxShadow   = 'var(--shadow-lg), 0 0 0 1px var(--border-focus), inset 0 1px 0 var(--glass-border-highlight)';
         e.currentTarget.style.transform   = 'translateY(-6px)';
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
-        e.currentTarget.style.boxShadow   = '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)';
+        e.currentTarget.style.borderColor = 'var(--glass-border)';
+        e.currentTarget.style.boxShadow   = 'var(--shadow-md), inset 0 1px 0 var(--glass-border-highlight)';
         e.currentTarget.style.transform   = 'translateY(0)';
       }}
     >
@@ -79,7 +79,7 @@ function ApartmentCard({ apt, idx }) {
       {/* Card body */}
       <div style={{ padding: '18px 20px 20px' }}>
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h3 style={{ ...SERIF, fontSize: '1.25rem', fontWeight: 700, color: '#f8f5f0', margin: 0, letterSpacing: '-0.01em' }}>
+          <h3 style={{ ...SERIF, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.01em' }}>
             Phòng {apt.roomNumber}
           </h3>
           <span style={{
@@ -105,13 +105,13 @@ function ApartmentCard({ apt, idx }) {
             { k: 'Diện tích', v: apt.area ? `${apt.area} m²` : '—' },
           ].map(({ k, v }) => (
             <div key={k} style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--glass-border)',
               borderRadius: '10px',
               padding: '10px 12px',
             }}>
-              <div style={{ color: 'rgba(201,169,110,0.5)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '3px' }}>{k}</div>
-              <div style={{ color: '#e8e0d4', fontWeight: 700, fontSize: '0.93rem' }}>{v}</div>
+              <div style={{ color: 'rgba(201,169,110,0.5)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', margin: '0 0 3px' }}>{k}</div>
+              <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.93rem' }}>{v}</div>
             </div>
           ))}
         </div>
@@ -124,22 +124,22 @@ function ApartmentCard({ apt, idx }) {
 function SkeletonCard() {
   return (
     <div style={{
-      background:           'rgba(255,255,255,0.04)',
+      background:           'var(--glass-bg)',
       backdropFilter:       'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
-      border:               '1px solid rgba(255,255,255,0.07)',
+      border:               '1px solid var(--glass-border)',
       borderRadius:         '18px',
       overflow:             'hidden',
     }}>
-      <div style={{ height: '130px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+      <div style={{ height: '130px', background: 'var(--bg-hover)', animation: 'pulse 1.5s ease-in-out infinite' }} />
       <div style={{ padding: '18px 20px 20px' }}>
         <div className="flex justify-between gap-2 mb-3">
-          <div style={{ height: '22px', width: '100px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }} />
-          <div style={{ height: '22px', width: '72px', background: 'rgba(255,255,255,0.04)', borderRadius: '999px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: '22px', width: '100px', background: 'var(--border-subtle)', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: '22px', width: '72px', background: 'var(--bg-hover)', borderRadius: '999px', animation: 'pulse 1.5s ease-in-out infinite' }} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           {[0, 1].map(i => (
-            <div key={i} style={{ height: '48px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', animation: 'pulse 1.5s ease-in-out infinite', animationDelay: `${i * 150}ms` }} />
+            <div key={i} style={{ height: '48px', background: 'var(--border-subtle)', borderRadius: '10px', animation: 'pulse 1.5s ease-in-out infinite', animationDelay: `${i * 150}ms` }} />
           ))}
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function ApartmentsPortfolio({ apartments, isLoading }) {
         backgroundImage: 'url("/images/section-bg.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundColor: '#0b1f28',
+        backgroundColor: 'var(--bg-body)',
       }}
     >
       {/* Deep overlay */}
@@ -168,7 +168,7 @@ export default function ApartmentsPortfolio({ apartments, isLoading }) {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(11,31,40,0.90)',
+          background: 'rgba(var(--bg-body-rgb), 0.90)',
           zIndex: 0,
         }}
       />
@@ -195,7 +195,7 @@ export default function ApartmentsPortfolio({ apartments, isLoading }) {
               <Building2 size={11} strokeWidth={2.5} />
               Danh mục bất động sản
             </p>
-            <h2 style={{ ...SERIF, color: '#f8f5f0', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 800, margin: 0, letterSpacing: '-0.025em' }}>
+            <h2 style={{ ...SERIF, color: 'var(--text-heading)', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 800, margin: 0, letterSpacing: '-0.025em' }}>
               Căn hộ quản lý
             </h2>
           </div>
@@ -231,7 +231,7 @@ export default function ApartmentsPortfolio({ apartments, isLoading }) {
         ) : apartments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '72px 24px', color: 'rgba(201,169,110,0.3)' }}>
             <Building2 size={52} style={{ margin: '0 auto 16px', opacity: 0.25 }} strokeWidth={1} />
-            <p style={{ margin: '0 0 20px', fontSize: '0.93rem', color: 'rgba(232,224,212,0.4)' }}>
+            <p style={{ margin: '0 0 20px', fontSize: '0.93rem', color: 'var(--text-muted)' }}>
               Chưa có căn hộ nào được đăng ký
             </p>
             <Link
