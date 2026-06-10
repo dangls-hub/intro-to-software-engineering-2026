@@ -3,8 +3,10 @@ package com.bluemoon.ams.module.resident.service.impl;
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.module.apartment.entity.Apartment;
 import com.bluemoon.ams.module.apartment.repository.ApartmentRepository;
+import com.bluemoon.ams.module.auth.entity.Role;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
+import com.bluemoon.ams.module.resident.dto.ApartmentJoinRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentResponse;
 import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
@@ -151,6 +153,56 @@ public class ResidentServiceImpl implements ResidentService {
         return residentMapper.toResponse(resident);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ResidentResponse getCurrentResidentRequest(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        return findMostRelevantResident(user)
+                .map(residentMapper::toResponse)
+                .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public ResidentResponse requestApartmentJoin(String username, ApartmentJoinRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        if (user.getRole() != Role.RESIDENT) {
+            throw new IllegalStateException("Chỉ cư dân mới được gửi yêu cầu vào căn hộ");
+        }
+        if (user.getFullName() == null || user.getFullName().isBlank()) {
+            throw new IllegalStateException("Vui lòng cập nhật họ tên trước khi gửi yêu cầu");
+        }
+
+        Apartment apartment = resolveApartment(request.getApartmentId());
+        Resident resident = residentRepository
+                .findFirstByFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING)
+                .orElseGet(Resident::new);
+
+        validateIdentityUnique(request.getIdentityNumber(), resident.getId());
+
+        resident.setFullName(user.getFullName());
+        resident.setIdentityNumber(blankToNull(request.getIdentityNumber()));
+        resident.setPhoneNumber(blankToNull(request.getPhoneNumber()));
+        resident.setDateOfBirth(request.getDateOfBirth());
+        resident.setGender(blankToNull(request.getGender()));
+        resident.setRelationshipType(parseRelationshipType(request.getRelationshipType()));
+        resident.setHousehold(null);
+        resident.setApartment(apartment);
+        resident.setApprovalStatus(ApprovalStatus.PENDING);
+        resident.setStatus(ResidentStatus.INACTIVE);
+        resident.setApprovedByUser(null);
+        resident.setApprovedAt(null);
+        resident.setRejectReason(null);
+
+        Resident saved = residentRepository.save(resident);
+        log.info("Cư dân {} gửi yêu cầu vào căn hộ {}", username, apartment.getRoomNumber());
+        return residentMapper.toResponse(saved);
+    }
+
     // --- Approval workflow methods ---
 
     @Override
@@ -176,6 +228,12 @@ public class ResidentServiceImpl implements ResidentService {
         resident.setRejectReason(null);
 
         userRepository.findByUsername(approverUsername).ifPresent(resident::setApprovedByUser);
+        Long approvedResidentId = resident.getId();
+        String approvedFullName = resident.getFullName();
+        residentRepository.findByFullName(approvedFullName).stream()
+                .filter(other -> !other.getId().equals(approvedResidentId))
+                .filter(other -> other.getStatus() == ResidentStatus.ACTIVE)
+                .forEach(other -> other.setStatus(ResidentStatus.INACTIVE));
 
         resident = residentRepository.save(resident);
         log.info("Phê duyệt cư dân ID={} bởi {}", id, approverUsername);
@@ -249,6 +307,32 @@ public class ResidentServiceImpl implements ResidentService {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    private java.util.Optional<Resident> findMostRelevantResident(User user) {
+        String fullName = user.getFullName();
+        if (fullName == null || fullName.isBlank()) {
+            return java.util.Optional.empty();
+        }
+
+        return residentRepository.findFirstByFullNameAndApprovalStatusOrderByCreatedAtDesc(fullName, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByFullNameAndStatusOrderByCreatedAtDesc(fullName, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByFullNameOrderByCreatedAtDesc(fullName));
+    }
+
+    private com.bluemoon.ams.module.resident.entity.RelationshipType parseRelationshipType(String relationshipType) {
+        if (relationshipType == null || relationshipType.isBlank()) {
+            return com.bluemoon.ams.module.resident.entity.RelationshipType.OTHER;
+        }
+        try {
+            return com.bluemoon.ams.module.resident.entity.RelationshipType.valueOf(relationshipType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return com.bluemoon.ams.module.resident.entity.RelationshipType.OTHER;
+        }
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     /**

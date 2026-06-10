@@ -2,6 +2,7 @@ package com.bluemoon.ams.module.resident.service;
 
 import com.bluemoon.ams.module.resident.dto.ResidentRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentResponse;
+import com.bluemoon.ams.module.resident.dto.ApartmentJoinRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -12,6 +13,8 @@ public interface ResidentService {
     ResidentResponse updateResident(Long id, ResidentRequest request);
     void deleteResident(Long id);
     ResidentResponse deactivateResident(Long id);
+    ResidentResponse getCurrentResidentRequest(String username);
+    ResidentResponse requestApartmentJoin(String username, ApartmentJoinRequest request);
 
     // Approval workflow
     Page<ResidentResponse> getPendingResidents(Pageable pageable);

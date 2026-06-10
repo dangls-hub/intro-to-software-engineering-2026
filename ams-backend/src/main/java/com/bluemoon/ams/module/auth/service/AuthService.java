@@ -88,6 +88,7 @@ public class AuthService {
     /**
      * Đăng ký tài khoản cư dân mới
      */
+    @Transactional
     public RegisterResponse register(RegisterRequest request) {
         // Kiểm tra username đã tồn tại
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -166,6 +167,7 @@ public class AuthService {
     /**
      * Đổi mật khẩu (user đã đăng nhập)
      */
+    @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
@@ -180,6 +182,33 @@ public class AuthService {
         userRepository.save(user);
 
         log.info("Password changed for user: {}", user.getUsername());
+    }
+
+    /**
+     * Cập nhật hồ sơ cá nhân của người dùng hiện tại.
+     */
+    @Transactional
+    public User updateProfile(String username, UpdateProfileRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        String newFullName = request.getFullName().trim();
+        String newEmail = request.getEmail().trim();
+        String oldFullName = user.getFullName();
+
+        if (!newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+            throw new RuntimeException("Email đã được sử dụng");
+        }
+
+        user.setFullName(newFullName);
+        user.setEmail(newEmail);
+
+        if (user.getRole() == Role.RESIDENT && oldFullName != null && !oldFullName.equals(newFullName)) {
+            List<Resident> linkedResidents = residentRepository.findByFullName(oldFullName);
+            linkedResidents.forEach(resident -> resident.setFullName(newFullName));
+        }
+
+        return userRepository.save(user);
     }
 
     /**

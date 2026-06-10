@@ -53,3 +53,12 @@ export async function fetchMe() {
   const payload = await apiClient('/auth/me');
   return unwrapData(payload);
 }
+
+export async function updateProfile(profile) {
+  const payload = await apiClient('/auth/me', {
+    method: 'PUT',
+    body: profile,
+  });
+
+  return unwrapData(payload);
+}

@@ -87,6 +87,22 @@ public class AuthController {
     }
 
     /**
+     * API cập nhật hồ sơ cá nhân của user hiện tại
+     * PUT /api/v1/auth/me
+     */
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserInfoResponse>> updateCurrentUser(
+            @Valid @RequestBody UpdateProfileRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Không được phép truy cập");
+        }
+
+        User user = authService.updateProfile(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.ok("Cập nhật hồ sơ thành công", buildUserInfoResponse(user)));
+    }
+
+    /**
      * API lấy thông tin user hiện tại (cần token hợp lệ)
      * GET /api/v1/auth/me
      * Header: Authorization: Bearer <token>
@@ -106,6 +122,12 @@ public class AuthController {
         // Lấy thông tin user từ database
         User user = authService.getUserByUsername(username);
 
+        UserInfoResponse response = buildUserInfoResponse(user);
+
+        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
+    }
+
+    private UserInfoResponse buildUserInfoResponse(User user) {
         Long apartmentId = null;
         String apartmentCode = null;
         if (user.getRole() == com.bluemoon.ams.module.auth.entity.Role.RESIDENT) {
@@ -122,7 +144,7 @@ public class AuthController {
             }
         }
 
-        UserInfoResponse response = UserInfoResponse.builder()
+        return UserInfoResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
@@ -131,7 +153,5 @@ public class AuthController {
                 .apartmentId(apartmentId)
                 .apartmentCode(apartmentCode)
                 .build();
-
-        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
     }
 }

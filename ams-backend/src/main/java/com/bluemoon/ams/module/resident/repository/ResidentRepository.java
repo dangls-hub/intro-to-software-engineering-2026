@@ -28,6 +28,16 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
 
     List<Resident> findByFullName(String fullName);
 
+    Optional<Resident> findFirstByFullNameAndApprovalStatusOrderByCreatedAtDesc(
+            String fullName,
+            ApprovalStatus approvalStatus);
+
+    Optional<Resident> findFirstByFullNameAndStatusOrderByCreatedAtDesc(
+            String fullName,
+            ResidentStatus status);
+
+    Optional<Resident> findFirstByFullNameOrderByCreatedAtDesc(String fullName);
+
     // Tìm theo từ khoá theo tên, CCCD và sdt
     @Query("SELECT r FROM Resident r WHERE " +
            "LOWER(r.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +

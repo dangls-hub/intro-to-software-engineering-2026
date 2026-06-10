@@ -57,3 +57,16 @@ export async function rejectResident(id, rejectReason) {
   );
 }
 
+export async function fetchMyApartmentRequest() {
+  return unwrapData(await apiClient('/residents/me/apartment-request'));
+}
+
+export async function requestApartmentJoin(request) {
+  return unwrapData(
+    await apiClient('/residents/me/apartment-request', {
+      method: 'POST',
+      body: request,
+    }),
+  );
+}
+
