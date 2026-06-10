@@ -6,6 +6,7 @@ import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.common.security.JwtUtil;
+import com.bluemoon.ams.common.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -28,6 +29,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final ResidentRepository residentRepository;
+    private final EmailService emailService;
 
     /**
      * Xác thực user và trả JWT token
@@ -125,21 +127,20 @@ public class AuthService {
      * Yêu cầu đặt lại mật khẩu — tạo reset token
      * Trong môi trường production sẽ gửi email, ở đây trả token trực tiếp để demo
      */
-    public String forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
 
         // Tạo reset token (UUID ngắn gọn)
-        String resetToken = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String resetToken = UUID.randomUUID().toString().substring(0, 6).toUpperCase(); // 6 ký tự như OTP
         user.setResetToken(resetToken);
-        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30)); // Hết hạn sau 30 phút
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15)); // Hết hạn sau 15 phút
         userRepository.save(user);
 
         log.info("Password reset token generated for user: {}", user.getUsername());
 
-        // Trong production: gửi email chứa reset token
-        // Ở đây trả về token trực tiếp cho mục đích demo
-        return resetToken;
+        // Gửi email chứa reset token/OTP cho user
+        emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
     }
 
     /**

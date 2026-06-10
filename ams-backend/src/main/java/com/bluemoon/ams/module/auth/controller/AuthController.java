@@ -53,12 +53,9 @@ public class AuthController {
      * POST /api/v1/auth/forgot-password
      */
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Map<String, String>>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        String resetToken = authService.forgotPassword(request);
-        // Trả về token cho mục đích demo (production sẽ gửi qua email)
-        return ResponseEntity.ok(ApiResponse.ok("Mã đặt lại mật khẩu đã được tạo",
-                Map.of("resetToken", resetToken,
-                       "note", "Trong production, mã này sẽ được gửi qua email. Đây là demo.")));
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok("Vui lòng kiểm tra email để nhận hướng dẫn đặt lại mật khẩu.", null));
     }
 
     /**
