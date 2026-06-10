@@ -12,20 +12,20 @@ export default function DashboardHero({ greeting, dateStr, error, onRefresh }) {
         paddingBottom: '64px',
         position: 'relative',
         overflow: 'hidden',
-        /* Background image — fallback to deep teal */
-        backgroundImage: 'url("/images/hero-bg.jpg")',
+        /* Background image — fallback to theme body */
+        backgroundImage: 'url("/images/hero-bg.webp")',
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
-        backgroundColor: '#0b1f28',
+        backgroundColor: 'var(--bg-body)',
       }}
     >
-      {/* Gradient overlay — deep teal from left, fades to transparent right */}
+      {/* Gradient overlay — body color from left, fades to transparent right */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to right, #0b1f28 0%, rgba(11,31,40,0.84) 52%, rgba(11,31,40,0.42) 100%)',
+          background: 'linear-gradient(to right, var(--bg-body) 0%, rgba(var(--bg-body-rgb), 0.84) 52%, rgba(var(--bg-body-rgb), 0.42) 100%)',
           zIndex: 0,
         }}
       />
@@ -146,7 +146,7 @@ export default function DashboardHero({ greeting, dateStr, error, onRefresh }) {
           ...SERIF,
           fontSize: 'clamp(2rem, 5vw, 3.6rem)',
           fontWeight: 800,
-          color: '#f8f5f0',
+          color: 'var(--text-heading)',
           margin: '0 0 8px',
           lineHeight: 1.08,
           letterSpacing: '-0.025em',
@@ -171,7 +171,7 @@ export default function DashboardHero({ greeting, dateStr, error, onRefresh }) {
         {/* Gold rule divider */}
         <div className="flex items-center gap-4">
           <div style={{ height: '1px', width: '52px', background: `linear-gradient(90deg, ${GOLD}, transparent)`, flexShrink: 0 }} />
-          <p style={{ color: 'rgba(232,224,212,0.42)', fontSize: '0.86rem', fontWeight: 500, margin: 0 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', fontWeight: 500, margin: 0 }}>
             Tổng quan toàn bộ hoạt động chung cư
           </p>
           <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, rgba(201,169,110,0.12), transparent)' }} />

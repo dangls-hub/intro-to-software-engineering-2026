@@ -13,27 +13,27 @@ const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
 export default function StatCard({ label, value, icon: Icon, suffix, isLoading = false, delay = 0, glass = false }) {
   /* ── variant tokens ───────────────────────────────── */
   const cardBase = glass ? {
-    background:     'rgba(255,255,255,0.06)',
+    background:     'var(--glass-bg)',
     backdropFilter: 'blur(16px) saturate(180%)',
     WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-    border:         '1px solid rgba(255,255,255,0.10)',
-    boxShadow:      '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
+    border:         '1px solid var(--glass-border)',
+    boxShadow:      'var(--shadow-md), inset 0 1px 0 var(--glass-border-highlight)',
   } : {
-    background:     '#ffffff',
-    border:         '1px solid rgba(139,108,62,0.08)',
-    boxShadow:      '0 2px 16px rgba(11,31,40,0.05)',
+    background:     'var(--bg-card-solid)',
+    border:         '1px solid var(--border)',
+    boxShadow:      'var(--shadow-sm)',
   };
 
   const hoverShadow = glass
-    ? '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,169,110,0.25), inset 0 1px 0 rgba(255,255,255,0.12)'
-    : '0 20px 56px rgba(11,31,40,0.1), 0 0 0 1px rgba(201,169,110,0.18)';
+    ? 'var(--shadow-lg), 0 0 0 1px var(--border-focus), inset 0 1px 0 var(--glass-border-highlight)'
+    : 'var(--shadow-md), 0 0 0 1px var(--border-focus)';
 
-  const valueColor  = glass ? '#f8f5f0'                  : TEAL;
-  const labelColor  = glass ? 'rgba(248,245,240,0.52)'   : 'rgba(11,31,40,0.55)';
-  const suffixColor = glass ? 'rgba(201,169,110,0.72)'   : 'rgba(139,108,62,0.6)';
-  const arrowColor  = glass ? 'rgba(248,245,240,0.18)'   : 'rgba(139,108,62,0.28)';
-  const skeletonA   = glass ? 'rgba(255,255,255,0.10)'   : 'rgba(139,108,62,0.10)';
-  const skeletonB   = glass ? 'rgba(255,255,255,0.06)'   : 'rgba(139,108,62,0.07)';
+  const valueColor  = 'var(--text-heading)';
+  const labelColor  = 'var(--text-secondary)';
+  const suffixColor = 'var(--accent)';
+  const arrowColor  = 'var(--text-muted)';
+  const skeletonA   = 'var(--border-subtle)';
+  const skeletonB   = 'var(--bg-hover)';
 
   return (
     <article

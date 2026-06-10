@@ -33,7 +33,7 @@ export default function SystemStatus({ health }) {
         backgroundImage: 'url("/images/section-bg.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundColor: '#0b1f28',
+        backgroundColor: 'var(--bg-body)',
       }}
     >
       {/* Deep overlay */}
@@ -42,7 +42,7 @@ export default function SystemStatus({ health }) {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(11,31,40,0.90)',
+          background: 'rgba(var(--bg-body-rgb), 0.90)',
           zIndex: 0,
         }}
       />
@@ -98,10 +98,10 @@ export default function SystemStatus({ health }) {
           <p style={{ color: GOLD, fontSize: '0.73rem', fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase', margin: '0 0 10px' }}>
             Hạ tầng hệ thống
           </p>
-          <h2 style={{ ...SERIF, color: '#f8f5f0', fontSize: 'clamp(1.4rem, 2.8vw, 2rem)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ ...SERIF, color: 'var(--text-heading)', fontSize: 'clamp(1.4rem, 2.8vw, 2rem)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
             {statusLabel}
           </h2>
-          <p style={{ color: 'rgba(232,224,212,0.42)', fontSize: '0.88rem', lineHeight: 1.75, margin: '0 0 32px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.75, margin: '0 0 32px' }}>
             Hệ thống quản lý chung cư BlueMoon — quản lý căn hộ, cư dân, khoản thu và thanh toán.
             Dữ liệu đồng bộ từ backend Spring Boot, lưu trữ trên MySQL.
           </p>

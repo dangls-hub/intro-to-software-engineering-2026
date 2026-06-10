@@ -20,19 +20,19 @@ export default function MetricsGrid({ metrics, isLoading }) {
         paddingBottom: '56px',
         position: 'relative',
         /* Continue same hero image for visual flow */
-        backgroundImage: 'url("/images/hero-bg.jpg")',
+        backgroundImage: 'url("/images/hero-bg.webp")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundColor: '#0b1f28',
+        backgroundColor: 'var(--bg-body)',
       }}
     >
-      {/* Deep teal overlay — slightly transparent so image texture bleeds through */}
+      {/* Overlay — slightly transparent so image texture bleeds through */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(11,31,40,0.84)',
+          background: 'rgba(var(--bg-body-rgb), 0.84)',
           zIndex: 0,
         }}
       />
@@ -66,7 +66,7 @@ export default function MetricsGrid({ metrics, isLoading }) {
           </p>
           <h2 style={{
             ...SERIF,
-            color: '#f8f5f0',
+            color: 'var(--text-heading)',
             fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
             fontWeight: 800,
             margin: 0,
