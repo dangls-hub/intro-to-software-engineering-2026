@@ -34,6 +34,15 @@ public class ResidentMapper {
         }
         r.setCreatedAt(resident.getCreatedAt());
         r.setUpdatedAt(resident.getUpdatedAt());
+
+        // Approval workflow fields
+        r.setApprovalStatus(resident.getApprovalStatus() != null ? resident.getApprovalStatus().name() : null);
+        r.setApprovedAt(resident.getApprovedAt());
+        r.setRejectReason(resident.getRejectReason());
+        if (resident.getApprovedByUser() != null) {
+            r.setApprovedByName(resident.getApprovedByUser().getFullName());
+        }
+
         return r;
     }
 

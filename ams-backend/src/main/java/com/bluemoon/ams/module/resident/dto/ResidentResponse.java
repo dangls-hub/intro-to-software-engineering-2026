@@ -21,4 +21,10 @@ public class ResidentResponse {
     private String roomNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Approval workflow fields
+    private String approvalStatus;
+    private String approvedByName;
+    private LocalDateTime approvedAt;
+    private String rejectReason;
 }

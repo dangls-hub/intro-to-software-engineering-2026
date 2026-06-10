@@ -12,9 +12,9 @@ import { useToast } from '../../../components/ui/Toast';
 const emptyForm = {
   fullName: '',
   identityNumber: '',
-  phone: '',
+  phoneNumber: '',
   dateOfBirth: '',
-  relationToOwner: '',
+  relationshipType: '',
   apartmentId: '',
   status: 'ACTIVE',
 };
@@ -22,6 +22,12 @@ const emptyForm = {
 const statusMap = {
   ACTIVE: { label: 'Đang cư trú', cls: 'active' },
   INACTIVE: { label: 'Ngưng cư trú', cls: 'inactive' },
+};
+
+const approvalMap = {
+  PENDING: { label: 'Chờ duyệt', cls: 'pending' },
+  APPROVED: { label: 'Đã duyệt', cls: 'approved' },
+  REJECTED: { label: 'Từ chối', cls: 'rejected' },
 };
 
 function getApartmentLabel(resident) {
@@ -87,9 +93,9 @@ function ResidentsPage() {
     setForm({
       fullName: resident.fullName ?? '',
       identityNumber: resident.identityNumber ?? '',
-      phone: resident.phone ?? '',
+      phoneNumber: resident.phoneNumber ?? '',
       dateOfBirth: resident.dateOfBirth ?? '',
-      relationToOwner: resident.relationToOwner ?? '',
+      relationshipType: resident.relationshipType ?? '',
       apartmentId: resident.apartmentId ?? resident.apartment?.id ?? '',
       status: resident.status ?? 'ACTIVE',
     });
@@ -145,7 +151,7 @@ function ResidentsPage() {
     (r) =>
       (r.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
       (r.identityNumber || '').toLowerCase().includes(search.toLowerCase()) ||
-      (r.phone || '').toLowerCase().includes(search.toLowerCase())
+      (r.phoneNumber || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -189,7 +195,7 @@ function ResidentsPage() {
 
           <label>
             Số điện thoại
-            <input name="phone" onChange={updateField} type="tel" value={form.phone} placeholder="VD: 0909 123 456" />
+            <input name="phoneNumber" onChange={updateField} type="tel" value={form.phoneNumber} placeholder="VD: 0909 123 456" />
           </label>
 
           <label>
@@ -199,7 +205,7 @@ function ResidentsPage() {
 
           <label>
             Quan hệ với chủ hộ
-            <input name="relationToOwner" onChange={updateField} type="text" value={form.relationToOwner} placeholder="VD: Chủ hộ, Vợ/Chồng, Con..." />
+            <input name="relationshipType" onChange={updateField} type="text" value={form.relationshipType} placeholder="VD: Chủ hộ, Vợ/Chồng, Con..." />
           </label>
 
           <label>
@@ -265,20 +271,33 @@ function ResidentsPage() {
                     <th>Điện thoại</th>
                     <th>Căn hộ</th>
                     <th>Trạng thái</th>
+                    <th>Phê duyệt</th>
                     <th aria-label="Thao tác" />
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((resident) => {
                     const st = statusMap[resident.status] || { label: resident.status || '—', cls: 'inactive' };
+                    const ap = approvalMap[resident.approvalStatus] || { label: resident.approvalStatus || '—', cls: 'inactive' };
                     return (
                       <tr key={resident.id || resident.identityNumber || resident.fullName}>
                         <td style={{ fontWeight: 700 }}>{resident.fullName || '—'}</td>
                         <td>{resident.identityNumber || '—'}</td>
-                        <td>{resident.phone || '—'}</td>
+                        <td>{resident.phoneNumber || '—'}</td>
                         <td>{getApartmentLabel(resident)}</td>
                         <td>
                           <span className={`status-badge ${st.cls}`}>{st.label}</span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${ap.cls}`}>{ap.label}</span>
+                          {resident.approvalStatus === 'REJECTED' && resident.rejectReason ? (
+                            <small style={{ display: 'block', opacity: 0.7, marginTop: 2, fontSize: '0.75rem' }}
+                              title={resident.rejectReason}>
+                              {resident.rejectReason.length > 30
+                                ? resident.rejectReason.slice(0, 30) + '…'
+                                : resident.rejectReason}
+                            </small>
+                          ) : null}
                         </td>
                         <td>
                           <div className="row-actions">

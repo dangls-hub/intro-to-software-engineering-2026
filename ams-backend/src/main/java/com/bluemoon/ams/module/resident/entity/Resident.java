@@ -2,6 +2,7 @@
 package com.bluemoon.ams.module.resident.entity;
 
 import com.bluemoon.ams.module.apartment.entity.Apartment;
+import com.bluemoon.ams.module.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,8 +15,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"household", "apartment"})
-@EqualsAndHashCode(exclude = {"household", "apartment"})
+@ToString(exclude = {"household", "apartment", "approvedByUser"})
+@EqualsAndHashCode(exclude = {"household", "apartment", "approvedByUser"})
 public class Resident {
     /* Entity đại diện cho dân cư, có thể liên kết với hộ gia đình hoặc căn hộ trực tiếp nếu không có hộ gia đình
     */
@@ -49,6 +50,25 @@ public class Resident {
     @Builder.Default
     private ResidentStatus status = ResidentStatus.ACTIVE;
 
+    // --- Approval workflow fields ---
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, length = 20)
+    @Builder.Default
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedByUser;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "reject_reason", length = 500)
+    private String rejectReason;
+
+    // --- Relationships ---
+
     // Dân cư link với hộ gia đình( nếu có) 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id")
@@ -70,6 +90,7 @@ public class Resident {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) status = ResidentStatus.ACTIVE;
+        if (approvalStatus == null) approvalStatus = ApprovalStatus.PENDING;
     }
 
     @PreUpdate

@@ -1,5 +1,6 @@
 package com.bluemoon.ams.module.resident.repository;
 
+import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import org.springframework.data.domain.Page;
@@ -42,4 +43,16 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
             @Param("status") ResidentStatus status,
             @Param("search") String search,
             Pageable pageable);
+
+    // --- Approval workflow queries ---
+
+    /**
+     * Lấy danh sách cư dân theo trạng thái phê duyệt (PENDING, APPROVED, REJECTED)
+     */
+    Page<Resident> findByApprovalStatus(ApprovalStatus approvalStatus, Pageable pageable);
+
+    /**
+     * Đếm số lượng cư dân theo trạng thái phê duyệt
+     */
+    long countByApprovalStatus(ApprovalStatus approvalStatus);
 }

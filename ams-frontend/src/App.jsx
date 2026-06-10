@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 import {
   Building2,
+  ClipboardCheck,
   CreditCard,
   Home,
   LayoutDashboard,
@@ -32,6 +33,8 @@ import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import ResidentsPage from './features/residents/pages/ResidentsPage';
+import ApprovalsPage from './features/residents/pages/ApprovalsPage';
+import { fetchPendingCount } from './features/residents/api/residentsApi';
 import FeesPage from './features/fees/pages/FeesPage';
 import PaymentsPage from './features/payments/pages/PaymentsPage';
 import ResidentDashboardPage from './features/dashboard/pages/ResidentDashboardPage';
@@ -58,8 +61,28 @@ function AppLayout() {
   const location = useLocation();
   const role = user?.role || 'STAFF';
   const isResident = role === 'RESIDENT';
-  const navItems = isResident ? residentNavItems : adminStaffNavItems;
+  const isAdmin = role === 'ADMIN';
   const displayName = user?.fullName || user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
+
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPendingCount()
+        .then(setPendingCount)
+        .catch((err) => console.error('Error fetching pending count:', err));
+    }
+  }, [isAdmin, location.pathname]);
+
+  // Build nav items dynamically based on role
+  const navItems = isResident
+    ? residentNavItems
+    : [
+        ...adminStaffNavItems,
+        ...(isAdmin
+          ? [{ to: '/approvals', label: 'Phê duyệt', icon: ClipboardCheck }]
+          : []),
+      ];
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -127,7 +150,27 @@ function AppLayout() {
           {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink className="nav-link" end={end} key={to} to={to}>
               <Icon size={18} aria-hidden="true" />
-              {label}
+              <span>{label}</span>
+              {to === '/approvals' && pendingCount > 0 && (
+                <span
+                  className="count-badge"
+                  style={{
+                    marginLeft: 'auto',
+                    background: 'var(--danger)',
+                    color: '#fff',
+                    padding: '2px 7px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    minWidth: '18px',
+                    textAlign: 'center',
+                    lineHeight: '1',
+                    boxShadow: '0 2px 8px rgba(248, 113, 113, 0.3)',
+                  }}
+                >
+                  {pendingCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -166,6 +209,7 @@ function AppLayout() {
             <Route element={<DashboardPage />} index />
             <Route element={<ApartmentsPage />} path="apartments" />
             <Route element={<ResidentsPage />} path="residents" />
+            <Route element={<ApprovalsPage />} path="approvals" />
             <Route element={<FeesPage role={role} />} path="fees" />
             <Route element={<PaymentsPage role={role} />} path="payments" />
             <Route element={<Navigate replace to="/" />} path="*" />
