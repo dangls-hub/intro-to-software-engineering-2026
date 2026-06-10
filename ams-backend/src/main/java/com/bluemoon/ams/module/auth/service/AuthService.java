@@ -15,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import com.bluemoon.ams.module.resident.entity.Resident;
+import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 
@@ -55,16 +57,10 @@ public class AuthService {
             Long apartmentId = null;
             String apartmentCode = null;
             if (user.getRole() == Role.RESIDENT) {
-                List<Resident> residents = residentRepository.findByFullName(user.getFullName());
-                if (residents != null && !residents.isEmpty()) {
-                    Resident r = residents.stream()
-                            .filter(res -> res.getStatus() == ResidentStatus.ACTIVE)
-                            .findFirst()
-                            .orElse(residents.get(0));
-                    if (r.getApartment() != null) {
-                        apartmentId = r.getApartment().getId();
-                        apartmentCode = r.getApartment().getRoomNumber();
-                    }
+                Optional<Resident> resident = findMostRelevantResident(user);
+                if (resident.isPresent() && resident.get().getApartment() != null) {
+                    apartmentId = resident.get().getApartment().getId();
+                    apartmentCode = resident.get().getApartment().getRoomNumber();
                 }
             }
 
@@ -203,9 +199,18 @@ public class AuthService {
         user.setFullName(newFullName);
         user.setEmail(newEmail);
 
-        if (user.getRole() == Role.RESIDENT && oldFullName != null && !oldFullName.equals(newFullName)) {
-            List<Resident> linkedResidents = residentRepository.findByFullName(oldFullName);
-            linkedResidents.forEach(resident -> resident.setFullName(newFullName));
+        if (user.getRole() == Role.RESIDENT) {
+            List<Resident> linkedResidents = residentRepository.findByUser(user);
+            if (linkedResidents.isEmpty() && oldFullName != null) {
+                linkedResidents = residentRepository.findByUserIsNullAndFullName(oldFullName);
+            }
+
+            linkedResidents.forEach(resident -> {
+                resident.setUser(user);
+                if (oldFullName != null && !oldFullName.equals(newFullName)) {
+                    resident.setFullName(newFullName);
+                }
+            });
         }
 
         return userRepository.save(user);
@@ -225,5 +230,20 @@ public class AuthService {
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+    }
+
+    private Optional<Resident> findMostRelevantResident(User user) {
+        Optional<Resident> linked = residentRepository.findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserOrderByCreatedAtDesc(user));
+        if (linked.isPresent() || user.getFullName() == null || user.getFullName().isBlank()) {
+            return linked;
+        }
+
+        Optional<Resident> legacy = residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndStatusOrderByCreatedAtDesc(user.getFullName(), ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameOrderByCreatedAtDesc(user.getFullName()));
+        legacy.ifPresent(resident -> resident.setUser(user));
+        return legacy;
     }
 }

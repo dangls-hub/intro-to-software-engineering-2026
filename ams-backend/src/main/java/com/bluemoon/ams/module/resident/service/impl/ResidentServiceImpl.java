@@ -179,11 +179,13 @@ public class ResidentServiceImpl implements ResidentService {
 
         Apartment apartment = resolveApartment(request.getApartmentId());
         Resident resident = residentRepository
-                .findFirstByFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING)
+                .findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING))
                 .orElseGet(Resident::new);
 
         validateIdentityUnique(request.getIdentityNumber(), resident.getId());
 
+        resident.setUser(user);
         resident.setFullName(user.getFullName());
         resident.setIdentityNumber(blankToNull(request.getIdentityNumber()));
         resident.setPhoneNumber(blankToNull(request.getPhoneNumber()));
@@ -229,8 +231,11 @@ public class ResidentServiceImpl implements ResidentService {
 
         userRepository.findByUsername(approverUsername).ifPresent(resident::setApprovedByUser);
         Long approvedResidentId = resident.getId();
-        String approvedFullName = resident.getFullName();
-        residentRepository.findByFullName(approvedFullName).stream()
+        User linkedUser = resident.getUser();
+        java.util.List<Resident> relatedResidents = linkedUser != null
+                ? residentRepository.findByUser(linkedUser)
+                : residentRepository.findByFullName(resident.getFullName());
+        relatedResidents.stream()
                 .filter(other -> !other.getId().equals(approvedResidentId))
                 .filter(other -> other.getStatus() == ResidentStatus.ACTIVE)
                 .forEach(other -> other.setStatus(ResidentStatus.INACTIVE));
@@ -310,14 +315,19 @@ public class ResidentServiceImpl implements ResidentService {
     }
 
     private java.util.Optional<Resident> findMostRelevantResident(User user) {
-        String fullName = user.getFullName();
-        if (fullName == null || fullName.isBlank()) {
-            return java.util.Optional.empty();
+        java.util.Optional<Resident> linked = residentRepository.findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserOrderByCreatedAtDesc(user));
+        if (linked.isPresent() || user.getFullName() == null || user.getFullName().isBlank()) {
+            return linked;
         }
 
-        return residentRepository.findFirstByFullNameAndApprovalStatusOrderByCreatedAtDesc(fullName, ApprovalStatus.PENDING)
-                .or(() -> residentRepository.findFirstByFullNameAndStatusOrderByCreatedAtDesc(fullName, ResidentStatus.ACTIVE))
-                .or(() -> residentRepository.findFirstByFullNameOrderByCreatedAtDesc(fullName));
+        String fullName = user.getFullName();
+        java.util.Optional<Resident> legacy = residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(fullName, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndStatusOrderByCreatedAtDesc(fullName, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameOrderByCreatedAtDesc(fullName));
+        legacy.ifPresent(resident -> resident.setUser(user));
+        return legacy;
     }
 
     private com.bluemoon.ams.module.resident.entity.RelationshipType parseRelationshipType(String relationshipType) {

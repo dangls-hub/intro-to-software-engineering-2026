@@ -17,6 +17,10 @@ public class ResidentMapper {
     public ResidentResponse toResponse(Resident resident) {
         ResidentResponse r = new ResidentResponse();
         r.setId(resident.getId());
+        if (resident.getUser() != null) {
+            r.setUserId(resident.getUser().getId());
+            r.setUsername(resident.getUser().getUsername());
+        }
         r.setFullName(resident.getFullName());
         r.setIdentityNumber(resident.getIdentityNumber());
         r.setPhoneNumber(resident.getPhoneNumber());

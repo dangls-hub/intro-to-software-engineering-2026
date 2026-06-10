@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"household", "apartment", "approvedByUser"})
-@EqualsAndHashCode(exclude = {"household", "apartment", "approvedByUser"})
+@ToString(exclude = {"user", "household", "apartment", "approvedByUser"})
+@EqualsAndHashCode(exclude = {"user", "household", "apartment", "approvedByUser"})
 public class Resident {
     /* Entity đại diện cho dân cư, có thể liên kết với hộ gia đình hoặc căn hộ trực tiếp nếu không có hộ gia đình
     */
@@ -68,6 +68,11 @@ public class Resident {
     private String rejectReason;
 
     // --- Relationships ---
+
+    // Tài khoản đăng nhập của cư dân. Null với cư dân do staff/admin tạo thủ công.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     // Dân cư link với hộ gia đình( nếu có) 
     @ManyToOne(fetch = FetchType.LAZY)

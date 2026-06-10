@@ -4,7 +4,6 @@ import com.bluemoon.ams.common.response.ApiResponse;
 import com.bluemoon.ams.module.auth.dto.*;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.service.AuthService;
-import com.bluemoon.ams.common.security.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
@@ -25,7 +25,6 @@ import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 @Slf4j
 public class AuthController {
     private final AuthService authService;
-    private final JwtUtil jwtUtil;
     private final ResidentRepository residentRepository;
 
     /**
@@ -131,16 +130,10 @@ public class AuthController {
         Long apartmentId = null;
         String apartmentCode = null;
         if (user.getRole() == com.bluemoon.ams.module.auth.entity.Role.RESIDENT) {
-            List<Resident> residents = residentRepository.findByFullName(user.getFullName());
-            if (residents != null && !residents.isEmpty()) {
-                Resident r = residents.stream()
-                        .filter(res -> res.getStatus() == ResidentStatus.ACTIVE)
-                        .findFirst()
-                        .orElse(residents.get(0));
-                if (r.getApartment() != null) {
-                    apartmentId = r.getApartment().getId();
-                    apartmentCode = r.getApartment().getRoomNumber();
-                }
+            Optional<Resident> resident = findMostRelevantResident(user);
+            if (resident.isPresent() && resident.get().getApartment() != null) {
+                apartmentId = resident.get().getApartment().getId();
+                apartmentCode = resident.get().getApartment().getRoomNumber();
             }
         }
 
@@ -153,5 +146,23 @@ public class AuthController {
                 .apartmentId(apartmentId)
                 .apartmentCode(apartmentCode)
                 .build();
+    }
+
+    private Optional<Resident> findMostRelevantResident(User user) {
+        Optional<Resident> linked = residentRepository.findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserOrderByCreatedAtDesc(user));
+        if (linked.isPresent() || user.getFullName() == null || user.getFullName().isBlank()) {
+            return linked;
+        }
+
+        Optional<Resident> legacy = residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndStatusOrderByCreatedAtDesc(user.getFullName(), ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameOrderByCreatedAtDesc(user.getFullName()));
+        legacy.ifPresent(resident -> {
+            resident.setUser(user);
+            residentRepository.save(resident);
+        });
+        return legacy;
     }
 }
