@@ -39,9 +39,6 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.ok(paymentService.getPaymentsByFeeId(feeId)));
     }
 
-    /* Dân cư được xem tất cả các khoản thanh toán liên quan đến căn hộ của họ, nhưng không được xem chi tiết khoản thanh toán của người khác. 
-    Do đó, chỉ cần kiểm tra apartmentId mà không cần kiểm tra userId.
-     */
     @GetMapping("/by-apartment/{apartmentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'RESIDENT')")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getByApartment(
