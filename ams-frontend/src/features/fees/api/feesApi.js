@@ -4,6 +4,10 @@ export async function fetchFees() {
   return asArray(await apiClient('/fees'));
 }
 
+export async function fetchFeesByApartment(apartmentId) {
+  return asArray(await apiClient(`/fees/by-apartment/${apartmentId}`));
+}
+
 export async function createFee(fee) {
   return unwrapData(await apiClient('/fees', { method: 'POST', body: fee }));
 }

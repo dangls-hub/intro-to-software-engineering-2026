@@ -1,12 +1,29 @@
-import { useEffect, useState } from 'react';
-import { Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  CheckCircle2,
+  Copy,
+  Plus,
+  QrCode,
+  RefreshCcw,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { createPayment, deletePayment, fetchPayments } from '../api/paymentsApi';
-import { fetchFees } from '../../fees/api/feesApi';
+import { fetchFees, fetchFeesByApartment } from '../../fees/api/feesApi';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../store/authStore';
 import { apiClient } from '../../../lib/apiClient';
 
 const emptyForm = { feeId: '', amount: '', paymentMethod: 'CASH', note: '' };
+
+const paymentConfig = {
+  bankId: import.meta.env.VITE_PAYMENT_BANK_ID ?? '',
+  accountNo: import.meta.env.VITE_PAYMENT_ACCOUNT_NO ?? '',
+  accountName: import.meta.env.VITE_PAYMENT_ACCOUNT_NAME ?? 'BlueMoon AMS',
+  template: import.meta.env.VITE_PAYMENT_QR_TEMPLATE ?? 'compact2',
+  contentPrefix: import.meta.env.VITE_PAYMENT_CONTENT_PREFIX ?? 'BLUEMOON',
+};
 
 const methodMap = {
   CASH: 'Tiền mặt',
@@ -18,6 +35,28 @@ const methodMap = {
 };
 const statusCls = { PAID: 'paid', PENDING: 'pending' };
 
+function amountOf(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function buildTransferContent(fee, user) {
+  const aptCode = user?.apartmentCode || `APT${user?.apartmentId || ''}`;
+  return `${paymentConfig.contentPrefix} ${aptCode} FEE${fee.id}`;
+}
+
+function buildQrUrl(fee, amount, user) {
+  if (!paymentConfig.bankId || !paymentConfig.accountNo) return '';
+
+  const params = new URLSearchParams({
+    amount: String(Math.round(amount)),
+    addInfo: buildTransferContent(fee, user),
+    accountName: paymentConfig.accountName,
+  });
+
+  return `https://img.vietqr.io/image/${encodeURIComponent(paymentConfig.bankId)}-${encodeURIComponent(paymentConfig.accountNo)}-${encodeURIComponent(paymentConfig.template)}.png?${params.toString()}`;
+}
+
 function PaymentsPage({ role }) {
   const { user } = useAuth();
   const isResident = role === 'RESIDENT';
@@ -26,6 +65,7 @@ function PaymentsPage({ role }) {
   const [fees, setFees] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [showModal, setShowModal] = useState(false);
+  const [activeQrFee, setActiveQrFee] = useState(null);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,26 +74,33 @@ function PaymentsPage({ role }) {
 
   async function loadData() {
     setIsLoading(true); setError('');
-    
+
     let paymentsPromise;
-    if (isResident && residentAptId) {
-      paymentsPromise = apiClient(`/payments/by-apartment/${residentAptId}`).then((res) => res.data || []);
+    let feesPromise;
+    if (isResident) {
+      paymentsPromise = residentAptId
+        ? apiClient(`/payments/by-apartment/${residentAptId}`).then((res) => res.data || [])
+        : Promise.resolve([]);
+      feesPromise = residentAptId ? fetchFeesByApartment(residentAptId) : Promise.resolve([]);
     } else {
       paymentsPromise = fetchPayments();
+      feesPromise = fetchFees();
     }
 
-    const [pRes, fRes] = await Promise.allSettled([paymentsPromise, fetchFees()]);
+    const [pRes, fRes] = await Promise.allSettled([paymentsPromise, feesPromise]);
     if (pRes.status === 'fulfilled') setPayments(pRes.value);
     else { setPayments([]); setError(pRes.reason?.message || 'Không tải được danh sách thanh toán.'); }
     if (fRes.status === 'fulfilled') setFees(fRes.value);
+    else if (!error) setError(fRes.reason?.message || 'Không tải được danh sách khoản thu.');
     setIsLoading(false);
   }
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateField(e) { setForm((p) => ({ ...p, [e.target.name]: e.target.value })); }
   function openCreate() { setForm(emptyForm); setShowModal(true); }
   function closeModal() { setShowModal(false); setForm(emptyForm); }
+  function closeQrModal() { setActiveQrFee(null); }
 
   async function handleSubmit(e) {
     e.preventDefault(); setIsSubmitting(true); setError('');
@@ -80,11 +127,55 @@ function PaymentsPage({ role }) {
 
   const fmt = (n) => n != null ? Number(n).toLocaleString('vi-VN') + ' đ' : '—';
 
+  const paidByFeeId = useMemo(() => payments.reduce((acc, payment) => {
+    acc[payment.feeId] = (acc[payment.feeId] || 0) + amountOf(payment.amount);
+    return acc;
+  }, {}), [payments]);
+
+  function remainingForFee(fee) {
+    return Math.max(0, amountOf(fee.amount) - (paidByFeeId[fee.id] || 0));
+  }
+
+  const payableFees = useMemo(
+    () => fees.filter((fee) => fee.status !== 'PAID' && remainingForFee(fee) > 0),
+    [fees, paidByFeeId],
+  );
+
   const filtered = payments.filter((p) =>
     (p.feeName || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.paymentMethod || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.note || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const qrAmount = activeQrFee ? remainingForFee(activeQrFee) : 0;
+  const transferContent = activeQrFee ? buildTransferContent(activeQrFee, user) : '';
+  const qrUrl = activeQrFee ? buildQrUrl(activeQrFee, qrAmount, user) : '';
+  const qrConfigured = Boolean(paymentConfig.bankId && paymentConfig.accountNo);
+
+  async function copyTransferContent() {
+    if (!transferContent) return;
+    try {
+      await navigator.clipboard.writeText(transferContent);
+      showToast('Đã sao chép nội dung chuyển khoản.', 'success');
+    } catch {
+      showToast('Không sao chép được. Vui lòng copy thủ công.', 'error');
+    }
+  }
+
+  async function copyAmount() {
+    if (!qrAmount) return;
+    try {
+      await navigator.clipboard.writeText(String(Math.round(qrAmount)));
+      showToast('Đã sao chép số tiền.', 'success');
+    } catch {
+      showToast('Không sao chép được. Vui lòng copy thủ công.', 'error');
+    }
+  }
+
+  function confirmTransfer() {
+    showToast('Sau khi chuyển khoản, ban quản lý sẽ đối soát và ghi nhận giao dịch.', 'success');
+    closeQrModal();
+  }
 
   return (
     <>
@@ -100,6 +191,69 @@ function PaymentsPage({ role }) {
       </header>
 
       {error && <div className="alert error">{error}</div>}
+
+      {isResident && (
+        <section className="workspace-panel" style={{ marginBottom: 20 }}>
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow" style={{ marginBottom: 4 }}>QR Banking</p>
+              <h2>Khoản cần thanh toán</h2>
+            </div>
+            <span className="count-badge">{isLoading ? '…' : payableFees.length}</span>
+          </div>
+
+          {!residentAptId ? (
+            <div className="empty-state">
+              <QrCode size={44} />
+              <p>Bạn cần được gán căn hộ trước khi tạo mã QR thanh toán.</p>
+            </div>
+          ) : isLoading ? (
+            <div className="loading-center"><span className="spinner" /> Đang tải khoản cần thanh toán...</div>
+          ) : payableFees.length === 0 ? (
+            <div className="empty-state">
+              <CheckCircle2 size={44} />
+              <p>Không có khoản thu nào cần thanh toán.</p>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Khoản thu</th>
+                    <th>Số tiền còn lại</th>
+                    <th>Hạn nộp</th>
+                    <th>Trạng thái</th>
+                    <th aria-label="Thanh toán" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {payableFees.map((fee) => (
+                    <tr key={fee.id}>
+                      <td style={{ fontWeight: 700 }}>{fee.name || '—'}</td>
+                      <td style={{ fontWeight: 800 }}>{fmt(remainingForFee(fee))}</td>
+                      <td>{fee.dueDate || '—'}</td>
+                      <td><span className={`status-badge ${statusCls[fee.status] || 'pending'}`}>{fee.status === 'PARTIAL' ? 'Thu một phần' : 'Chưa thu'}</span></td>
+                      <td>
+                        <div className="row-actions">
+                          <button
+                            className="secondary-button"
+                            onClick={() => setActiveQrFee(fee)}
+                            type="button"
+                            title="Tạo mã QR thanh toán"
+                          >
+                            <QrCode size={15} />
+                            Tạo QR
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="workspace-panel">
         <div className="toolbar">
@@ -180,6 +334,78 @@ function PaymentsPage({ role }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {activeQrFee && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeQrModal(); }}>
+          <div className="modal-panel">
+            <div className="modal-header">
+              <h2>Thanh toán bằng QR</h2>
+              <button className="icon-button" onClick={closeQrModal} type="button"><X size={18} /></button>
+            </div>
+
+            {!qrConfigured ? (
+              <div className="alert error" style={{ marginBottom: 16 }}>
+                Chưa cấu hình tài khoản nhận tiền. Cập nhật VITE_PAYMENT_BANK_ID và VITE_PAYMENT_ACCOUNT_NO trong .env.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', placeItems: 'center', marginBottom: 18 }}>
+                <img
+                  alt={`QR thanh toán ${activeQrFee.name}`}
+                  src={qrUrl}
+                  style={{
+                    width: 'min(100%, 320px)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border)',
+                    background: '#fff',
+                    padding: 10,
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="form-grid">
+              <label>
+                Khoản thu
+                <input readOnly value={activeQrFee.name || ''} />
+              </label>
+              <label>
+                Số tiền
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input readOnly value={fmt(qrAmount)} />
+                  <button className="secondary-button" onClick={copyAmount} type="button" title="Sao chép số tiền">
+                    <Copy size={15} />
+                  </button>
+                </div>
+              </label>
+              <label>
+                Nội dung chuyển khoản
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input readOnly value={transferContent} />
+                  <button className="secondary-button" onClick={copyTransferContent} type="button" title="Sao chép nội dung">
+                    <Copy size={15} />
+                  </button>
+                </div>
+              </label>
+              <label>
+                Tài khoản nhận
+                <input readOnly value={qrConfigured ? `${paymentConfig.accountNo} - ${paymentConfig.accountName}` : 'Chưa cấu hình'} />
+              </label>
+            </div>
+
+            <p className="muted-text" style={{ marginTop: 16 }}>
+              Sau khi chuyển khoản, giao dịch sẽ xuất hiện khi ban quản lý đối soát và ghi nhận thanh toán.
+            </p>
+
+            <div className="modal-footer">
+              <button className="secondary-button" onClick={closeQrModal} type="button">Đóng</button>
+              <button className="primary-button" onClick={confirmTransfer} type="button">
+                <CheckCircle2 size={17} />
+                Tôi đã chuyển khoản
+              </button>
+            </div>
           </div>
         </div>
       )}
