@@ -1731,9 +1731,9 @@ h1 {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(var(--bg-body-rgb), 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(var(--bg-body-rgb), 0.8);
+  backdrop-filter: blur(20px) brightness(80%);
+  -webkit-backdrop-filter: blur(20px) brightness(80%);
   display: grid;
   place-items: center;
   z-index: 100;
