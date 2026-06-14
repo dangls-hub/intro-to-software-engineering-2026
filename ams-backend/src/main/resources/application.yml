@@ -17,6 +17,19 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: bmoonamin@gmail.com
+    password: rpoo dmer aban slae
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 server:
   port: 8080
 
@@ -25,3 +38,5 @@ app:
   jwt:
     secret-key: BlueMoonAMS2026SecretKeyForJWTTokenGenerationDoNotUseInProduction
     expiration-ms: 86400000
+
+

@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 @Data
 public class ResidentResponse {
     private Long id;
+    private Long userId;
+    private String username;
     private String fullName;
     private String identityNumber;
     private String phoneNumber;
@@ -21,4 +23,10 @@ public class ResidentResponse {
     private String roomNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Approval workflow fields
+    private String approvalStatus;
+    private String approvedByName;
+    private LocalDateTime approvedAt;
+    private String rejectReason;
 }

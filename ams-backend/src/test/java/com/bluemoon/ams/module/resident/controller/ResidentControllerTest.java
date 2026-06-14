@@ -2,6 +2,7 @@ package com.bluemoon.ams.module.resident.controller;
 
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.common.security.JwtUtil;
+import com.bluemoon.ams.module.resident.dto.ApprovalRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentResponse;
 import com.bluemoon.ams.module.resident.service.ResidentService;
@@ -204,5 +205,135 @@ class ResidentControllerTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("INACTIVE"));
+    }
+
+    // ── GET /api/v1/residents/pending ───────────────────────────────────────
+
+    @Test
+    @DisplayName("GET /pending → 200 with page of pending residents when ADMIN")
+    void getPendingResidents_asAdmin_returns200() throws Exception {
+        ResidentResponse pendingResponse = new ResidentResponse();
+        pendingResponse.setId(2L);
+        pendingResponse.setFullName("Pending Resident");
+        pendingResponse.setApprovalStatus("PENDING");
+
+        Page<ResidentResponse> page = new PageImpl<>(List.of(pendingResponse));
+        when(residentService.getPendingResidents(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/residents/pending")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].fullName").value("Pending Resident"))
+                .andExpect(jsonPath("$.data.content[0].approvalStatus").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("GET /pending → 403 when not ADMIN")
+    void getPendingResidents_asResident_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/residents/pending")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── GET /api/v1/residents/pending/count ─────────────────────────────────
+
+    @Test
+    @DisplayName("GET /pending/count → 200 with count when ADMIN")
+    void countPendingResidents_asAdmin_returns200() throws Exception {
+        when(residentService.countPendingResidents()).thenReturn(5L);
+
+        mockMvc.perform(get("/api/v1/residents/pending/count")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(5));
+    }
+
+    @Test
+    @DisplayName("GET /pending/count → 403 when not ADMIN")
+    void countPendingResidents_asResident_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/residents/pending/count")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── POST /api/v1/residents/{id}/approve ─────────────────────────────────
+
+    @Test
+    @DisplayName("POST /{id}/approve (APPROVE) → 200 when ADMIN")
+    void approveResident_asAdmin_returns200() throws Exception {
+        ResidentResponse approved = new ResidentResponse();
+        approved.setId(1L);
+        approved.setFullName("Nguyen Duc Khai");
+        approved.setApprovalStatus("APPROVED");
+        approved.setStatus("ACTIVE");
+
+        when(residentService.approveResident(eq(1L), anyString())).thenReturn(approved);
+
+        ApprovalRequest req = new ApprovalRequest();
+        req.setAction("APPROVE");
+
+        mockMvc.perform(post("/api/v1/residents/1/approve")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+    }
+
+    @Test
+    @DisplayName("POST /{id}/approve (REJECT) → 200 when ADMIN and reason provided")
+    void rejectResident_asAdmin_returns200() throws Exception {
+        ResidentResponse rejected = new ResidentResponse();
+        rejected.setId(1L);
+        rejected.setFullName("Nguyen Duc Khai");
+        rejected.setApprovalStatus("REJECTED");
+        rejected.setStatus("INACTIVE");
+        rejected.setRejectReason("Incorrect documents");
+
+        when(residentService.rejectResident(eq(1L), anyString(), eq("Incorrect documents"))).thenReturn(rejected);
+
+        ApprovalRequest req = new ApprovalRequest();
+        req.setAction("REJECT");
+        req.setRejectReason("Incorrect documents");
+
+        mockMvc.perform(post("/api/v1/residents/1/approve")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.approvalStatus").value("REJECTED"))
+                .andExpect(jsonPath("$.data.rejectReason").value("Incorrect documents"));
+    }
+
+    @Test
+    @DisplayName("POST /{id}/approve (REJECT) → 400 when reason is blank")
+    void rejectResident_blankReason_returns400() throws Exception {
+        ApprovalRequest req = new ApprovalRequest();
+        req.setAction("REJECT");
+        req.setRejectReason("");
+
+        mockMvc.perform(post("/api/v1/residents/1/approve")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /{id}/approve → 403 when not ADMIN")
+    void approveResident_asResident_returns403() throws Exception {
+        ApprovalRequest req = new ApprovalRequest();
+        req.setAction("APPROVE");
+
+        mockMvc.perform(post("/api/v1/residents/1/approve")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
     }
 }

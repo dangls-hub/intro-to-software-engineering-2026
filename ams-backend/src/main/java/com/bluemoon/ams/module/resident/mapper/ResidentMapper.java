@@ -17,6 +17,10 @@ public class ResidentMapper {
     public ResidentResponse toResponse(Resident resident) {
         ResidentResponse r = new ResidentResponse();
         r.setId(resident.getId());
+        if (resident.getUser() != null) {
+            r.setUserId(resident.getUser().getId());
+            r.setUsername(resident.getUser().getUsername());
+        }
         r.setFullName(resident.getFullName());
         r.setIdentityNumber(resident.getIdentityNumber());
         r.setPhoneNumber(resident.getPhoneNumber());
@@ -34,6 +38,15 @@ public class ResidentMapper {
         }
         r.setCreatedAt(resident.getCreatedAt());
         r.setUpdatedAt(resident.getUpdatedAt());
+
+        // Approval workflow fields
+        r.setApprovalStatus(resident.getApprovalStatus() != null ? resident.getApprovalStatus().name() : null);
+        r.setApprovedAt(resident.getApprovedAt());
+        r.setRejectReason(resident.getRejectReason());
+        if (resident.getApprovedByUser() != null) {
+            r.setApprovedByName(resident.getApprovedByUser().getFullName());
+        }
+
         return r;
     }
 

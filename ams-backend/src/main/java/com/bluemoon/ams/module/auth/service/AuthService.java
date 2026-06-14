@@ -6,6 +6,7 @@ import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.common.security.JwtUtil;
+import com.bluemoon.ams.common.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import com.bluemoon.ams.module.resident.entity.Resident;
+import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 
@@ -28,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final ResidentRepository residentRepository;
+    private final EmailService emailService;
 
     /**
      * Xác thực user và trả JWT token
@@ -55,16 +59,10 @@ public class AuthService {
             Long apartmentId = null;
             String apartmentCode = null;
             if (user.getRole() == Role.RESIDENT) {
-                List<Resident> residents = residentRepository.findByFullName(user.getFullName());
-                if (residents != null && !residents.isEmpty()) {
-                    Resident r = residents.stream()
-                            .filter(res -> res.getStatus() == ResidentStatus.ACTIVE)
-                            .findFirst()
-                            .orElse(residents.get(0));
-                    if (r.getApartment() != null) {
-                        apartmentId = r.getApartment().getId();
-                        apartmentCode = r.getApartment().getRoomNumber();
-                    }
+                Optional<Resident> resident = findMostRelevantResident(user);
+                if (resident.isPresent() && resident.get().getApartment() != null) {
+                    apartmentId = resident.get().getApartment().getId();
+                    apartmentCode = resident.get().getApartment().getRoomNumber();
                 }
             }
 
@@ -88,6 +86,7 @@ public class AuthService {
     /**
      * Đăng ký tài khoản cư dân mới
      */
+    @Transactional
     public RegisterResponse register(RegisterRequest request) {
         // Kiểm tra username đã tồn tại
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -125,21 +124,20 @@ public class AuthService {
      * Yêu cầu đặt lại mật khẩu — tạo reset token
      * Trong môi trường production sẽ gửi email, ở đây trả token trực tiếp để demo
      */
-    public String forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
 
         // Tạo reset token (UUID ngắn gọn)
-        String resetToken = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String resetToken = UUID.randomUUID().toString().substring(0, 6).toUpperCase(); // 6 ký tự như OTP
         user.setResetToken(resetToken);
-        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30)); // Hết hạn sau 30 phút
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15)); // Hết hạn sau 15 phút
         userRepository.save(user);
 
         log.info("Password reset token generated for user: {}", user.getUsername());
 
-        // Trong production: gửi email chứa reset token
-        // Ở đây trả về token trực tiếp cho mục đích demo
-        return resetToken;
+        // Gửi email chứa reset token/OTP cho user
+        emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
     }
 
     /**
@@ -166,6 +164,7 @@ public class AuthService {
     /**
      * Đổi mật khẩu (user đã đăng nhập)
      */
+    @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
@@ -183,6 +182,42 @@ public class AuthService {
     }
 
     /**
+     * Cập nhật hồ sơ cá nhân của người dùng hiện tại.
+     */
+    @Transactional
+    public User updateProfile(String username, UpdateProfileRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        String newFullName = request.getFullName().trim();
+        String newEmail = request.getEmail().trim();
+        String oldFullName = user.getFullName();
+
+        if (!newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+            throw new RuntimeException("Email đã được sử dụng");
+        }
+
+        user.setFullName(newFullName);
+        user.setEmail(newEmail);
+
+        if (user.getRole() == Role.RESIDENT) {
+            List<Resident> linkedResidents = residentRepository.findByUser(user);
+            if (linkedResidents.isEmpty() && oldFullName != null) {
+                linkedResidents = residentRepository.findByUserIsNullAndFullName(oldFullName);
+            }
+
+            linkedResidents.forEach(resident -> {
+                resident.setUser(user);
+                if (oldFullName != null && !oldFullName.equals(newFullName)) {
+                    resident.setFullName(newFullName);
+                }
+            });
+        }
+
+        return userRepository.save(user);
+    }
+
+    /**
      * Load UserDetails từ username (dùng cho Spring Security)
      */
     public User getUserByUsername(String username) {
@@ -196,5 +231,20 @@ public class AuthService {
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+    }
+
+    private Optional<Resident> findMostRelevantResident(User user) {
+        Optional<Resident> linked = residentRepository.findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserOrderByCreatedAtDesc(user));
+        if (linked.isPresent() || user.getFullName() == null || user.getFullName().isBlank()) {
+            return linked;
+        }
+
+        Optional<Resident> legacy = residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndStatusOrderByCreatedAtDesc(user.getFullName(), ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameOrderByCreatedAtDesc(user.getFullName()));
+        legacy.ifPresent(resident -> resident.setUser(user));
+        return legacy;
     }
 }

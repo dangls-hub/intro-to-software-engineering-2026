@@ -1,7 +1,9 @@
 package com.bluemoon.ams.module.resident.repository;
 
+import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
+import com.bluemoon.ams.module.auth.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,7 +27,41 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
 
     List<Resident> findByApartmentId(Long apartmentId);
 
+    List<Resident> findByUser(User user);
+
     List<Resident> findByFullName(String fullName);
+
+    List<Resident> findByUserIsNullAndFullName(String fullName);
+
+    Optional<Resident> findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(
+            User user,
+            ApprovalStatus approvalStatus);
+
+    Optional<Resident> findFirstByUserAndStatusOrderByCreatedAtDesc(
+            User user,
+            ResidentStatus status);
+
+    Optional<Resident> findFirstByUserOrderByCreatedAtDesc(User user);
+
+    Optional<Resident> findFirstByFullNameAndApprovalStatusOrderByCreatedAtDesc(
+            String fullName,
+            ApprovalStatus approvalStatus);
+
+    Optional<Resident> findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(
+            String fullName,
+            ApprovalStatus approvalStatus);
+
+    Optional<Resident> findFirstByFullNameAndStatusOrderByCreatedAtDesc(
+            String fullName,
+            ResidentStatus status);
+
+    Optional<Resident> findFirstByUserIsNullAndFullNameAndStatusOrderByCreatedAtDesc(
+            String fullName,
+            ResidentStatus status);
+
+    Optional<Resident> findFirstByFullNameOrderByCreatedAtDesc(String fullName);
+
+    Optional<Resident> findFirstByUserIsNullAndFullNameOrderByCreatedAtDesc(String fullName);
 
     // Tìm theo từ khoá theo tên, CCCD và sdt
     @Query("SELECT r FROM Resident r WHERE " +
@@ -42,4 +78,16 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
             @Param("status") ResidentStatus status,
             @Param("search") String search,
             Pageable pageable);
+
+    // --- Approval workflow queries ---
+
+    /**
+     * Lấy danh sách cư dân theo trạng thái phê duyệt (PENDING, APPROVED, REJECTED)
+     */
+    Page<Resident> findByApprovalStatus(ApprovalStatus approvalStatus, Pageable pageable);
+
+    /**
+     * Đếm số lượng cư dân theo trạng thái phê duyệt
+     */
+    long countByApprovalStatus(ApprovalStatus approvalStatus);
 }

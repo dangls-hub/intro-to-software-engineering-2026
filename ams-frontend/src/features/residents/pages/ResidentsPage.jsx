@@ -29,23 +29,31 @@ const PM_STATUS = {
 };
 
 const emptyForm = {
-  fullName:        '',
-  identityNumber:  '',
-  phone:           '',
-  dateOfBirth:     '',
-  relationToOwner: '',
-  apartmentId:     '',
-  status:          'ACTIVE',
+  fullName: '',
+  identityNumber: '',
+  phoneNumber: '',
+  dateOfBirth: '',
+  relationshipType: '',
+  apartmentId: '',
+  status: 'ACTIVE',
 };
 
-/* ── Preserved helper — DO NOT MODIFY ──────────────── */
+const approvalMap = {
+  PENDING: { label: 'Chờ duyệt', cls: 'pending' },
+  APPROVED: { label: 'Đã duyệt', cls: 'approved' },
+  REJECTED: { label: 'Từ chối', cls: 'rejected' },
+};
+
 function getApartmentLabel(resident) {
   return (
     resident.apartmentRoomNumber ||
     resident.apartment?.roomNumber ||
     resident.household?.apartment?.roomNumber ||
     resident.apartmentCode ||
+    resident.roomNumber ||
+    resident.apartment?.roomNumber ||
     resident.apartment?.code ||
+    resident.household?.apartment?.roomNumber ||
     resident.household?.apartment?.code ||
     resident.apartmentId ||
     '—'
@@ -61,6 +69,7 @@ function SkeletonRows() {
       <td><div className="pm-skeleton" style={{ height: '18px', width: '88px',  animationDelay: `${i * 55 + 44}ms` }} /></td>
       <td><div className="pm-skeleton" style={{ height: '18px', width: '48px',  animationDelay: `${i * 55 + 66}ms` }} /></td>
       <td><div className="pm-skeleton" style={{ height: '22px', width: '92px',  borderRadius: '999px', animationDelay: `${i * 55 + 88}ms` }} /></td>
+      <td><div className="pm-skeleton" style={{ height: '22px', width: '92px',  borderRadius: '999px', animationDelay: `${i * 55 + 99}ms` }} /></td>
       <td>
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
           <div className="pm-skeleton" style={{ height: '30px', width: '30px', borderRadius: '8px', animationDelay: `${i * 55 + 110}ms` }} />
@@ -121,13 +130,13 @@ function ResidentsPage() {
   function startEdit(resident) {
     setEditingId(resident.id);
     setForm({
-      fullName:        resident.fullName        ?? '',
-      identityNumber:  resident.identityNumber  ?? '',
-      phone:           resident.phone           ?? '',
-      dateOfBirth:     resident.dateOfBirth     ?? '',
-      relationToOwner: resident.relationToOwner ?? '',
-      apartmentId:     resident.apartmentId ?? resident.apartment?.id ?? '',
-      status:          resident.status ?? 'ACTIVE',
+      fullName: resident.fullName ?? '',
+      identityNumber: resident.identityNumber ?? '',
+      phoneNumber: resident.phoneNumber ?? '',
+      dateOfBirth: resident.dateOfBirth ?? '',
+      relationshipType: resident.relationshipType ?? '',
+      apartmentId: resident.apartmentId ?? resident.apartment?.id ?? '',
+      status: resident.status ?? 'ACTIVE',
     });
   }
 
@@ -176,9 +185,9 @@ function ResidentsPage() {
 
   const filtered = residents.filter(
     (r) =>
-      (r.fullName        || '').toLowerCase().includes(search.toLowerCase()) ||
-      (r.identityNumber  || '').toLowerCase().includes(search.toLowerCase()) ||
-      (r.phone           || '').toLowerCase().includes(search.toLowerCase())
+      (r.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.identityNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.phoneNumber || '').toLowerCase().includes(search.toLowerCase())
   );
   /* ── End preserved logic ─────────────────────────── */
 
@@ -294,10 +303,10 @@ function ResidentsPage() {
           <label>
             Số điện thoại
             <input
-              name="phone"
+              name="phoneNumber"
               onChange={updateField}
               type="tel"
-              value={form.phone}
+              value={form.phoneNumber}
               placeholder="VD: 0909 123 456"
             />
           </label>
@@ -315,10 +324,10 @@ function ResidentsPage() {
           <label>
             Quan hệ với chủ hộ
             <input
-              name="relationToOwner"
+              name="relationshipType"
               onChange={updateField}
               type="text"
-              value={form.relationToOwner}
+              value={form.relationshipType}
               placeholder="VD: Chủ hộ, Vợ/Chồng, Con..."
             />
           </label>
@@ -328,8 +337,8 @@ function ResidentsPage() {
             <select name="apartmentId" onChange={updateField} value={form.apartmentId}>
               <option value="">— Chưa gán —</option>
               {apartments.map((apartment) => (
-                <option key={apartment.id || apartment.roomNumber || apartment.code} value={apartment.id}>
-                  {apartment.roomNumber || apartment.code}
+                <option key={apartment.id || apartment.roomNumber} value={apartment.id}>
+                  {apartment.roomNumber}
                 </option>
               ))}
             </select>
@@ -399,6 +408,7 @@ function ResidentsPage() {
                     <th>Điện thoại</th>
                     <th>Căn hộ</th>
                     <th>Trạng thái</th>
+                    <th>Phê duyệt</th>
                     <th aria-label="Thao tác" />
                   </tr>
                 </thead>
@@ -441,11 +451,13 @@ function ResidentsPage() {
                     <th>Điện thoại</th>
                     <th>Căn hộ</th>
                     <th>Trạng thái</th>
+                    <th>Phê duyệt</th>
                     <th aria-label="Thao tác" />
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((resident) => {
+                    const ap = approvalMap[resident.approvalStatus] || { label: resident.approvalStatus || '—', cls: 'inactive' };
                     const st        = PM_STATUS[resident.status] || PM_STATUS.INACTIVE;
                     const isEditing = editingId === resident.id;
                     return (
@@ -464,7 +476,7 @@ function ResidentsPage() {
                           {resident.identityNumber || '—'}
                         </td>
                         <td style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                          {resident.phone || '—'}
+                          {resident.phoneNumber || '—'}
                         </td>
                         <td>
                           <span style={{
@@ -497,6 +509,17 @@ function ResidentsPage() {
                             }} />
                             {st.label}
                           </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${ap.cls}`}>{ap.label}</span>
+                          {resident.approvalStatus === 'REJECTED' && resident.rejectReason ? (
+                            <small style={{ display: 'block', opacity: 0.7, marginTop: 2, fontSize: '0.75rem' }}
+                              title={resident.rejectReason}>
+                              {resident.rejectReason.length > 30
+                                ? resident.rejectReason.slice(0, 30) + '…'
+                                : resident.rejectReason}
+                            </small>
+                          ) : null}
                         </td>
                         <td>
                           <div className="row-actions">
