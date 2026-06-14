@@ -367,6 +367,11 @@ textarea:focus-visible {
   outline: none;
 }
 
+option {
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+}
+
 label {
   color: var(--text-secondary);
   display: grid;
