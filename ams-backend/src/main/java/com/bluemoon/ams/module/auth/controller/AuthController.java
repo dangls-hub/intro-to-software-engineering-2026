@@ -48,6 +48,18 @@ public class AuthController {
     }
 
     /**
+     * API đăng nhập bằng Google
+     * POST /api/v1/auth/google
+     * Body: { "idToken": "<google_id_token_từ_frontend>" }
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequest request) {
+        LoginResponse response = authService.loginWithGoogle(request);
+        return ResponseEntity.ok(ApiResponse.ok("Đăng nhập bằng Google thành công", response));
+    }
+
+    /**
      * API quên mật khẩu — tạo reset token
      * POST /api/v1/auth/forgot-password
      */
