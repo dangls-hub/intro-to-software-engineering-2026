@@ -60,6 +60,7 @@ out/
 # =============================
 .env
 .env.*
+!.env.example
 *.env
 secrets.yml
 secrets.properties
