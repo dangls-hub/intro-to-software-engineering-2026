@@ -16,7 +16,7 @@ export default function Sidebar({ navItems, displayName, role, sidebarOpen, onCl
         aria-hidden="true"
       />
 
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} id="sidebar">
 
         {/* ── Brand ──────────────────────────────────── */}
         <div className="brand">
@@ -44,7 +44,7 @@ export default function Sidebar({ navItems, displayName, role, sidebarOpen, onCl
         {/* ── Navigation ─────────────────────────────── */}
         <p className="nav-section-label" aria-hidden="true">Điều hướng</p>
         <nav className="nav-list" aria-label="Điều hướng chính">
-          {navItems.map(({ to, label, icon: Icon, end }) => (
+          {navItems.map(({ to, label, icon: Icon, end, badge }) => (
             <NavLink
               key={to}
               to={to}
@@ -53,7 +53,8 @@ export default function Sidebar({ navItems, displayName, role, sidebarOpen, onCl
               onClick={onClose}
             >
               <Icon size={17} strokeWidth={2} aria-hidden="true" />
-              {label}
+              <span>{label}</span>
+              {badge > 0 ? <span className="nav-count-badge">{badge}</span> : null}
             </NavLink>
           ))}
         </nav>

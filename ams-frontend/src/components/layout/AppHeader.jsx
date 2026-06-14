@@ -5,8 +5,10 @@ const ROUTE_MAP = {
   '/':            'Tổng quan',
   '/apartments':  'Căn hộ',
   '/residents':   'Cư dân',
+  '/approvals':   'Phê duyệt',
   '/fees':        'Khoản thu',
   '/payments':    'Thanh toán',
+  '/profile':     'Hồ sơ',
   '/my-fees':     'Khoản thu',
   '/my-payments': 'Thanh toán',
 };

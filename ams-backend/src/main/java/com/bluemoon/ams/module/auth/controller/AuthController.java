@@ -4,7 +4,6 @@ import com.bluemoon.ams.common.response.ApiResponse;
 import com.bluemoon.ams.module.auth.dto.*;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.service.AuthService;
-import com.bluemoon.ams.common.security.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
@@ -25,7 +25,6 @@ import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 @Slf4j
 public class AuthController {
     private final AuthService authService;
-    private final JwtUtil jwtUtil;
     private final ResidentRepository residentRepository;
 
     /**
@@ -49,16 +48,25 @@ public class AuthController {
     }
 
     /**
+     * API đăng nhập bằng Google
+     * POST /api/v1/auth/google
+     * Body: { "idToken": "<google_id_token_từ_frontend>" }
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequest request) {
+        LoginResponse response = authService.loginWithGoogle(request);
+        return ResponseEntity.ok(ApiResponse.ok("Đăng nhập bằng Google thành công", response));
+    }
+
+    /**
      * API quên mật khẩu — tạo reset token
      * POST /api/v1/auth/forgot-password
      */
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Map<String, String>>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        String resetToken = authService.forgotPassword(request);
-        // Trả về token cho mục đích demo (production sẽ gửi qua email)
-        return ResponseEntity.ok(ApiResponse.ok("Mã đặt lại mật khẩu đã được tạo",
-                Map.of("resetToken", resetToken,
-                       "note", "Trong production, mã này sẽ được gửi qua email. Đây là demo.")));
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok("Vui lòng kiểm tra email để nhận hướng dẫn đặt lại mật khẩu.", null));
     }
 
     /**
@@ -87,6 +95,22 @@ public class AuthController {
     }
 
     /**
+     * API cập nhật hồ sơ cá nhân của user hiện tại
+     * PUT /api/v1/auth/me
+     */
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserInfoResponse>> updateCurrentUser(
+            @Valid @RequestBody UpdateProfileRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Không được phép truy cập");
+        }
+
+        User user = authService.updateProfile(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.ok("Cập nhật hồ sơ thành công", buildUserInfoResponse(user)));
+    }
+
+    /**
      * API lấy thông tin user hiện tại (cần token hợp lệ)
      * GET /api/v1/auth/me
      * Header: Authorization: Bearer <token>
@@ -106,23 +130,23 @@ public class AuthController {
         // Lấy thông tin user từ database
         User user = authService.getUserByUsername(username);
 
+        UserInfoResponse response = buildUserInfoResponse(user);
+
+        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
+    }
+
+    private UserInfoResponse buildUserInfoResponse(User user) {
         Long apartmentId = null;
         String apartmentCode = null;
         if (user.getRole() == com.bluemoon.ams.module.auth.entity.Role.RESIDENT) {
-            List<Resident> residents = residentRepository.findByFullName(user.getFullName());
-            if (residents != null && !residents.isEmpty()) {
-                Resident r = residents.stream()
-                        .filter(res -> res.getStatus() == ResidentStatus.ACTIVE)
-                        .findFirst()
-                        .orElse(residents.get(0));
-                if (r.getApartment() != null) {
-                    apartmentId = r.getApartment().getId();
-                    apartmentCode = r.getApartment().getRoomNumber();
-                }
+            Optional<Resident> resident = findMostRelevantResident(user);
+            if (resident.isPresent() && resident.get().getApartment() != null) {
+                apartmentId = resident.get().getApartment().getId();
+                apartmentCode = resident.get().getApartment().getRoomNumber();
             }
         }
 
-        UserInfoResponse response = UserInfoResponse.builder()
+        return UserInfoResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
@@ -131,7 +155,23 @@ public class AuthController {
                 .apartmentId(apartmentId)
                 .apartmentCode(apartmentCode)
                 .build();
+    }
 
-        return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
+    private Optional<Resident> findMostRelevantResident(User user) {
+        Optional<Resident> linked = residentRepository.findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserAndStatusOrderByCreatedAtDesc(user, ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserOrderByCreatedAtDesc(user));
+        if (linked.isPresent() || user.getFullName() == null || user.getFullName().isBlank()) {
+            return linked;
+        }
+
+        Optional<Resident> legacy = residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING)
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndStatusOrderByCreatedAtDesc(user.getFullName(), ResidentStatus.ACTIVE))
+                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameOrderByCreatedAtDesc(user.getFullName()));
+        legacy.ifPresent(resident -> {
+            resident.setUser(user);
+            residentRepository.save(resident);
+        });
+        return legacy;
     }
 }

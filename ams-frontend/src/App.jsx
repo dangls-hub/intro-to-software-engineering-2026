@@ -8,10 +8,12 @@ import {
 } from 'react-router-dom';
 import {
   Building2,
+  ClipboardCheck,
   CreditCard,
   Home,
   LayoutDashboard,
   Receipt,
+  UserRound,
   Users,
 } from 'lucide-react';
 
@@ -28,9 +30,12 @@ import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import ResidentsPage from './features/residents/pages/ResidentsPage';
+import ApprovalsPage from './features/residents/pages/ApprovalsPage';
+import { fetchPendingCount } from './features/residents/api/residentsApi';
 import FeesPage from './features/fees/pages/FeesPage';
 import PaymentsPage from './features/payments/pages/PaymentsPage';
 import ResidentDashboardPage from './features/dashboard/pages/ResidentDashboardPage';
+import ProfilePage from './features/profile/pages/ProfilePage';
 
 /** Danh sách nav items cho ADMIN và STAFF */
 const adminStaffNavItems = [
@@ -44,6 +49,7 @@ const adminStaffNavItems = [
 /** Danh sách nav items cho RESIDENT (cư dân) */
 const residentNavItems = [
   { to: '/', label: 'Trang chủ', icon: Home, end: true },
+  { to: '/profile', label: 'Hồ sơ', icon: UserRound },
   { to: '/my-fees', label: 'Khoản thu', icon: Receipt },
   { to: '/my-payments', label: 'Thanh toán', icon: CreditCard },
 ];
@@ -54,8 +60,33 @@ function AppLayout() {
   const location = useLocation();
   const role = user?.role || 'STAFF';
   const isResident = role === 'RESIDENT';
-  const navItems = isResident ? residentNavItems : adminStaffNavItems;
+  const isAdmin = role === 'ADMIN';
   const displayName = user?.fullName || user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
+
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPendingCount()
+        .then(setPendingCount)
+        .catch((err) => console.error('Error fetching pending count:', err));
+    }
+  }, [isAdmin, location.pathname]);
+
+  // Build nav items dynamically based on role
+  const navItems = isResident
+    ? residentNavItems
+    : [
+        ...adminStaffNavItems,
+        ...(isAdmin
+          ? [{
+              to: '/approvals',
+              label: 'Phê duyệt',
+              icon: ClipboardCheck,
+              badge: pendingCount,
+            }]
+          : []),
+      ];
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -98,6 +129,7 @@ function AppLayout() {
           {isResident ? (
             <Routes>
               <Route element={<ResidentDashboardPage />} index />
+              <Route element={<ProfilePage />} path="profile" />
               <Route element={<FeesPage role={role} />} path="my-fees" />
               <Route element={<PaymentsPage role={role} />} path="my-payments" />
               <Route element={<Navigate replace to="/" />} path="*" />
@@ -107,6 +139,7 @@ function AppLayout() {
               <Route element={<DashboardPage />} index />
               <Route element={<ApartmentsPage />} path="apartments" />
               <Route element={<ResidentsPage />} path="residents" />
+              <Route element={<ApprovalsPage />} path="approvals" />
               <Route element={<FeesPage role={role} />} path="fees" />
               <Route element={<PaymentsPage role={role} />} path="payments" />
               <Route element={<Navigate replace to="/" />} path="*" />

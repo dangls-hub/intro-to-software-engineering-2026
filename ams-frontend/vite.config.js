@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  cacheDir: '.cache/vite',
   server: {
     port: 5173,
     proxy: {

@@ -29,7 +29,7 @@ public class Apartment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ApartmentStatus status;  // ACTIVE, INACTIVE
+    private ApartmentStatus status;  // AVAILABLE, OCCUPIED, INACTIVE
 
     @Column(length = 255)
     private String description; // Mô tả
