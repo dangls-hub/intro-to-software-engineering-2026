@@ -29,6 +29,10 @@ spring:
           starttls:
             enable: true
             required: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: 8080
@@ -38,5 +42,5 @@ app:
   jwt:
     secret-key: BlueMoonAMS2026SecretKeyForJWTTokenGenerationDoNotUseInProduction
     expiration-ms: 86400000
-
-
+  upload:
+    proof-dir: uploads/proofs

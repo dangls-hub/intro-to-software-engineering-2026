@@ -10,6 +10,7 @@ import {
   Building2,
   ClipboardCheck,
   CreditCard,
+  FileCheck,
   Home,
   LayoutDashboard,
   Receipt,
@@ -32,8 +33,11 @@ import ApartmentsPage from './features/apartments/pages/ApartmentsPage';
 import ResidentsPage from './features/residents/pages/ResidentsPage';
 import ApprovalsPage from './features/residents/pages/ApprovalsPage';
 import { fetchPendingCount } from './features/residents/api/residentsApi';
+import { fetchPendingRequestCount } from './features/payments/api/paymentRequestsApi';
 import FeesPage from './features/fees/pages/FeesPage';
+import FeesByApartmentPage from './features/fees/pages/FeesByApartmentPage';
 import PaymentsPage from './features/payments/pages/PaymentsPage';
+import PaymentApprovalsPage from './features/payments/pages/PaymentApprovalsPage';
 import ResidentDashboardPage from './features/dashboard/pages/ResidentDashboardPage';
 import ProfilePage from './features/profile/pages/ProfilePage';
 
@@ -64,12 +68,16 @@ function AppLayout() {
   const displayName = user?.fullName || user?.username || (isResident ? 'Cư dân' : 'Nhân viên');
 
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
 
   useEffect(() => {
     if (isAdmin) {
       fetchPendingCount()
         .then(setPendingCount)
         .catch((err) => console.error('Error fetching pending count:', err));
+      fetchPendingRequestCount()
+        .then(setPendingPaymentCount)
+        .catch((err) => console.error('Error fetching pending payment count:', err));
     }
   }, [isAdmin, location.pathname]);
 
@@ -79,12 +87,20 @@ function AppLayout() {
     : [
         ...adminStaffNavItems,
         ...(isAdmin
-          ? [{
-              to: '/approvals',
-              label: 'Phê duyệt',
-              icon: ClipboardCheck,
-              badge: pendingCount,
-            }]
+          ? [
+              {
+                to: '/approvals',
+                label: 'Phê duyệt CD',
+                icon: ClipboardCheck,
+                badge: pendingCount,
+              },
+              {
+                to: '/payment-approvals',
+                label: 'Duyệt TT',
+                icon: FileCheck,
+                badge: pendingPaymentCount,
+              },
+            ]
           : []),
       ];
 
@@ -141,7 +157,9 @@ function AppLayout() {
               <Route element={<ResidentsPage />} path="residents" />
               <Route element={<ApprovalsPage />} path="approvals" />
               <Route element={<FeesPage role={role} />} path="fees" />
+              <Route element={<FeesByApartmentPage />} path="fees-by-apartment" />
               <Route element={<PaymentsPage role={role} />} path="payments" />
+              <Route element={<PaymentApprovalsPage />} path="payment-approvals" />
               <Route element={<Navigate replace to="/" />} path="*" />
             </Routes>
           )}

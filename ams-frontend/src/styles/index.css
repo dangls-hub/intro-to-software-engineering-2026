@@ -2544,3 +2544,380 @@ textarea,
   cursor: not-allowed;
   transform: none !important;
 }
+
+/* ══════════════════════════════════════════════════
+   PAYMENT MANAGEMENT — Upload, Lightbox, Cards
+   ══════════════════════════════════════════════════ */
+
+/* ── Upload Proof Area ─────────────────────────── */
+
+.upload-proof-area {
+  margin-bottom: 8px;
+}
+
+.upload-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 24px;
+  border: 2px dashed var(--border-input);
+  border-radius: var(--radius-lg);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  text-align: center;
+}
+
+.upload-drop-zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.proof-preview-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.proof-preview-img {
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+}
+
+.proof-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.proof-remove-btn:hover {
+  background: var(--danger);
+  border-color: transparent;
+}
+
+/* Proof thumbnail button in tables */
+.proof-thumb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--accent-subtle);
+  border: 1px solid rgba(201, 169, 110, 0.15);
+  border-radius: var(--radius-full);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  white-space: nowrap;
+}
+
+.proof-thumb-btn:hover {
+  background: rgba(201, 169, 110, 0.18);
+  border-color: var(--accent);
+}
+
+/* ── Lightbox ──────────────────────────────────── */
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: grid;
+  place-items: center;
+  z-index: 300;
+  padding: 20px;
+  cursor: pointer;
+  animation: fade-in 0.2s var(--ease);
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+  animation: modal-enter 0.3s var(--ease) both;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  z-index: 10;
+}
+
+.lightbox-close:hover {
+  background: var(--danger);
+  border-color: transparent;
+  transform: scale(1.08);
+}
+
+/* ── Apartment Fee Grid ────────────────────────── */
+
+.apt-fee-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .apt-fee-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .apt-fee-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.apt-fee-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  cursor: pointer;
+  transition: all var(--duration-slow) var(--ease);
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-shadow-top),
+    var(--shadow-sm);
+  animation: card-enter 0.4s var(--ease) both;
+}
+
+.apt-fee-card:hover {
+  border-color: rgba(201, 169, 110, 0.22);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-shadow-top),
+    var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.apt-fee-card--active {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-shadow-top),
+    0 0 0 1px var(--accent),
+    var(--shadow-md);
+  grid-column: 1 / -1;
+}
+
+.apt-fee-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.apt-fee-card__icon {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.apt-fee-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.apt-fee-card__room {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.apt-fee-card__floor {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.apt-fee-card__chevron {
+  color: var(--text-muted);
+  transition: transform var(--duration) var(--ease);
+  flex-shrink: 0;
+}
+
+.apt-fee-card__chevron--open {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.apt-fee-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.apt-fee-card__stat {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.apt-fee-card__stat-value {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 2px;
+}
+
+.apt-fee-card__stat-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Progress bar */
+.apt-fee-card__progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.apt-fee-card__progress-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.apt-fee-card__progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--gradient-accent);
+  transition: width 0.5s var(--ease);
+  min-width: 0;
+}
+
+.apt-fee-card__progress-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Expanded detail */
+.apt-fee-card__detail {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  animation: content-enter 0.3s var(--ease) both;
+}
+
+.apt-fee-card__detail-header {
+  margin-bottom: 12px;
+}
+
+.apt-fee-card__detail-header h4 {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+/* ── Filter Chips ──────────────────────────────── */
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-chip--active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Primary Button Danger Variant ─────────────── */
+
+.primary-button--danger {
+  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+  box-shadow: 0 2px 12px rgba(248, 113, 113, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.primary-button--danger:hover {
+  box-shadow: 0 4px 24px rgba(248, 113, 113, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+}

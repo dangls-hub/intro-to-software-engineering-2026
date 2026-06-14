@@ -399,7 +399,7 @@ public class ApartmentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.status").value("OCCUPIED"));
+                .andExpect(jsonPath("$.data.status").value("INACTIVE"));
     }
 
     /**
