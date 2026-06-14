@@ -41,6 +41,9 @@ const emptyForm = {
 /* ── Preserved helper — DO NOT MODIFY ──────────────── */
 function getApartmentLabel(resident) {
   return (
+    resident.apartmentRoomNumber ||
+    resident.apartment?.roomNumber ||
+    resident.household?.apartment?.roomNumber ||
     resident.apartmentCode ||
     resident.apartment?.code ||
     resident.household?.apartment?.code ||
@@ -325,8 +328,8 @@ function ResidentsPage() {
             <select name="apartmentId" onChange={updateField} value={form.apartmentId}>
               <option value="">— Chưa gán —</option>
               {apartments.map((apartment) => (
-                <option key={apartment.id || apartment.code} value={apartment.id}>
-                  {apartment.code}
+                <option key={apartment.id || apartment.roomNumber || apartment.code} value={apartment.id}>
+                  {apartment.roomNumber || apartment.code}
                 </option>
               ))}
             </select>
