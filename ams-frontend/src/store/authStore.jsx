@@ -94,9 +94,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updateUser = useCallback((userData) => {
-    const merged = { ...(state.user || {}), ...userData };
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
     dispatch({ type: ActionTypes.UPDATE_USER, payload: userData });
+  }, []);
+
+  // Sync user state to localStorage when it updates
+  useEffect(() => {
+    if (state.user) {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.user));
+    }
   }, [state.user]);
 
   // Sync fresh user data from server on startup/reload
