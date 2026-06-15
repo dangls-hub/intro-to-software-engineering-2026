@@ -104,6 +104,7 @@ export default function ApartmentsPortfolio({ apartments, isLoading }) {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundColor: 'var(--bg-body)',
+        paddingBottom: '20px'
       }}
     >
       {/* Deep overlay */}

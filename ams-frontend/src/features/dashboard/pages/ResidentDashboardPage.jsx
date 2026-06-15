@@ -284,7 +284,7 @@ function ResidentDashboardPage() {
           ══════════════════════════════════════════════ */}
       <section
         className="db-section"
-        style={{ paddingTop: '12px', paddingBottom: '52px' }}
+        style={{ paddingTop: '12px', paddingBottom: '20px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
