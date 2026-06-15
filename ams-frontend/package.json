@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node -e \"const fs=require('fs');if(!fs.existsSync('.env')&&fs.existsSync('.env.example')){fs.copyFileSync('.env.example','.env');console.log('[setup] Đã tạo .env từ .env.example');}\"",
+    "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('.env')&&fs.existsSync('.env.example')){fs.copyFileSync('.env.example','.env');console.log('[setup] Đã tạo .env từ .env.example');}\"",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
