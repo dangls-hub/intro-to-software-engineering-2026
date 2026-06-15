@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   CreditCard,
@@ -28,9 +28,11 @@ function ResidentDashboardPage() {
   const greeting =
     now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
-  const aptInfo = user?.apartmentId
-    ? { id: user.apartmentId, code: user.apartmentCode }
-    : null;
+  const aptInfo = useMemo(() => {
+    return user?.apartmentId
+      ? { id: user.apartmentId, code: user.apartmentCode }
+      : null;
+  }, [user?.apartmentId, user?.apartmentCode]);
 
   const [stats,     setStats]     = useState({ unpaidCount: 0, totalPaid: 0 });
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +72,7 @@ function ResidentDashboardPage() {
     }
 
     checkHealthAndLoadData();
-  }, [user, aptInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [aptInfo]); // eslint-disable-line react-hooks/exhaustive-deps
   /* ── End preserved logic ──────────────────────────── */
 
   const displayName = user?.fullName || user?.username || 'Cư dân';

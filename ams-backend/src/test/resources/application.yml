@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: ams-backend-test
+
+  datasource:
+    url: jdbc:h2:mem:bluemoon_ams_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+
+  mail:
+    host: localhost
+    port: 2525
+    username: test@bluemoon.local
+    password: test
+
+app:
+  jwt:
+    secret-key: BlueMoonAMS2026TestSecretKeyForJWTTokenGenerationOnly
+    expiration-ms: 86400000
