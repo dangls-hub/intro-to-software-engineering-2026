@@ -277,9 +277,18 @@ public class AuthService {
                 })
                 .orElseGet(() -> {
                     // Chưa có tài khoản → tạo mới
+                    String gmailName = email.contains("@") ? email.substring(0, email.indexOf("@")) : email;
+                    String finalUsername = gmailName;
+                    int counter = 1;
+                    while (userRepository.existsByUsername(finalUsername)) {
+                        finalUsername = gmailName + counter;
+                        counter++;
+                    }
+
                     User newUser = User.builder()
+                        .username(finalUsername)
                         .email(email)
-                        .fullName(fullName)
+                        .fullName(gmailName)
                         .googleId(googleId)
                         .avatarUrl(picture)
                         .authProvider("GOOGLE")
