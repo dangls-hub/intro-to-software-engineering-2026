@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Building2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
-import { login as loginApi } from '../api/authApi';
+import { login as loginApi, loginWithGoogle as loginWithGoogleApi } from '../api/authApi';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../store/authStore';
 import { useToast } from '../../../components/ui/Toast';
+import { GoogleLogin } from '@react-oauth/google';
 
 const initialForm = { username: '', password: '' };
 
@@ -13,6 +14,7 @@ function LoginPage() {
   const [form, setForm] = useState(initialForm);
   const [showPw, setShowPw] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   function updateField(e) {
@@ -20,6 +22,7 @@ function LoginPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  // ── Đăng nhập bằng username/password (giữ nguyên) ──────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
     setIsSubmitting(true);
@@ -49,6 +52,38 @@ function LoginPage() {
     }
   }
 
+  // ── Đăng nhập bằng Google ──────────────────────────────────────────────────
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setIsGoogleLoading(true);
+    setError('');
+    try {
+      const res = await loginWithGoogleApi(credentialResponse.credential);
+      const token = res?.token;
+      if (!token) throw new Error('Phản hồi không chứa token.');
+
+      login({
+        token,
+        user: {
+          username: res?.username,
+          fullName: res?.fullName,
+          role: res?.role,
+        },
+      });
+
+      showToast('Đăng nhập bằng Google thành công!', 'success');
+    } catch (err) {
+      const message = err.message || 'Đăng nhập Google thất bại.';
+      setError(message);
+      showToast(message, 'error');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Đăng nhập Google bị huỷ hoặc thất bại.');
+  };
+
   return (
     <main className="auth-screen">
       <section className="auth-panel" aria-labelledby="login-title">
@@ -64,6 +99,24 @@ function LoginPage() {
 
         {error && <div className="alert error">{error}</div>}
 
+        {/* ── Nút đăng nhập Google ─────────────────────────────────────────── */}
+        <div className="google-login-container" style={{ display: 'flex', justifyContent: 'center' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+          />
+        </div>
+
+        {/* ── Divider ──────────────────────────────────────────────────────── */}
+        <div className="auth-divider" role="separator">
+          <span>hoặc đăng nhập bằng tài khoản</span>
+        </div>
+
+        {/* ── Form username / password (giữ nguyên) ────────────────────────── */}
         <form className="form-grid" onSubmit={handleSubmit}>
           <label>
             Tên đăng nhập
@@ -111,7 +164,7 @@ function LoginPage() {
 
           <button
             className="primary-button full-width submit-mt"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isGoogleLoading}
             id="login-submit"
             type="submit"
           >

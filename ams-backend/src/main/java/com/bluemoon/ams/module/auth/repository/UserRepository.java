@@ -32,4 +32,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Kiểm tra xem email có tồn tại không
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Tìm user theo Google ID (sub) — dùng cho Google OAuth login
+     */
+    Optional<User> findByGoogleId(String googleId);
 }

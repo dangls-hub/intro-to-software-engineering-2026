@@ -22,6 +22,12 @@ import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ApprovalStatus;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +38,9 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final ResidentRepository residentRepository;
     private final EmailService emailService;
+
+    @Value("${app.google.client-id}")
+    private String googleClientId;
 
     /**
      * Xác thực user và trả JWT token
@@ -231,6 +240,110 @@ public class AuthService {
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+    }
+
+    // =========================================================================
+    // Google OAuth
+    // =========================================================================
+
+    /**
+     * Xác thực Google ID Token và trả về JWT của hệ thống.
+     * Logic:
+     *   1. Verify token với Google (chữ ký + expiry + audience)
+     *   2. Tìm user theo google_id  → nếu có, đăng nhập ngay
+     *   3. Tìm user theo email       → nếu có, liên kết google_id vào tài khoản cũ
+     *   4. Tạo user mới nếu chưa tồn tại
+     */
+    @Transactional
+    public LoginResponse loginWithGoogle(GoogleLoginRequest request) {
+        // Bước 1: Verify ID Token với Google
+        GoogleIdToken.Payload googlePayload = verifyGoogleToken(request.getIdToken());
+
+        String googleId = googlePayload.getSubject();
+        String email    = googlePayload.getEmail();
+        String fullName = (String) googlePayload.get("name");
+        String picture  = (String) googlePayload.get("picture");
+
+        // Bước 2 & 3 & 4: Tìm hoặc tạo user
+        User user = userRepository.findByGoogleId(googleId)
+            .orElseGet(() -> userRepository.findByEmail(email)
+                .map(existing -> {
+                    // Tài khoản email đã tồn tại (LOCAL) → liên kết Google vào
+                    existing.setGoogleId(googleId);
+                    if (existing.getAvatarUrl() == null) existing.setAvatarUrl(picture);
+                    existing.setAuthProvider("GOOGLE");
+                    log.info("Linked Google account to existing user: {}", email);
+                    return userRepository.save(existing);
+                })
+                .orElseGet(() -> {
+                    // Chưa có tài khoản → tạo mới
+                    User newUser = User.builder()
+                        .email(email)
+                        .fullName(fullName)
+                        .googleId(googleId)
+                        .avatarUrl(picture)
+                        .authProvider("GOOGLE")
+                        .role(Role.RESIDENT)
+                        .build();
+                    log.info("New user registered via Google: {}", email);
+                    return userRepository.save(newUser);
+                })
+            );
+
+        // Bước 5: Cấp JWT hệ thống
+        // Dùng email làm subject cho user Google (không có username)
+        String principal = (user.getUsername() != null) ? user.getUsername() : user.getEmail();
+        String token = jwtUtil.generateToken(principal, user.getRole().name());
+
+        // Lấy thông tin căn hộ nếu là RESIDENT
+        Long apartmentId = null;
+        String apartmentCode = null;
+        if (user.getRole() == Role.RESIDENT) {
+            Optional<Resident> resident = findMostRelevantResident(user);
+            if (resident.isPresent() && resident.get().getApartment() != null) {
+                apartmentId = resident.get().getApartment().getId();
+                apartmentCode = resident.get().getApartment().getRoomNumber();
+            }
+        }
+
+        log.info("Successful Google login for: {}", email);
+
+        return LoginResponse.builder()
+            .token(token)
+            .userId(user.getId())
+            .username(principal)
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .role(user.getRole().toString())
+            .apartmentId(apartmentId)
+            .apartmentCode(apartmentCode)
+            .message("Đăng nhập bằng Google thành công")
+            .build();
+    }
+
+    /**
+     * Gọi Google API để verify Google ID Token.
+     * Thư viện tự động kiểm tra chữ ký, expiry, và audience (client-id).
+     */
+    private GoogleIdToken.Payload verifyGoogleToken(String idTokenString) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(), GsonFactory.getDefaultInstance()
+            )
+            .setAudience(Collections.singletonList(googleClientId))
+            .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken == null) {
+                throw new RuntimeException("Google ID Token không hợp lệ hoặc đã hết hạn");
+            }
+            return idToken.getPayload();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Google token verification failed: {}", e.getMessage());
+            throw new RuntimeException("Xác thực Google thất bại: " + e.getMessage());
+        }
     }
 
     private Optional<Resident> findMostRelevantResident(User user) {

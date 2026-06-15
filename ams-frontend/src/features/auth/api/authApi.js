@@ -62,3 +62,16 @@ export async function updateProfile(profile) {
 
   return unwrapData(payload);
 }
+
+/**
+ * Gửi Google ID Token lên backend để đổi lấy JWT của hệ thống.
+ * @param {string} idToken - Google ID Token (credential) nhận được từ @react-oauth/google
+ */
+export async function loginWithGoogle(idToken) {
+  const payload = await apiClient('/auth/google', {
+    method: 'POST',
+    body: { idToken },
+    token: null,
+  });
+  return unwrapData(payload);
+}

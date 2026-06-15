@@ -38,5 +38,7 @@ app:
   jwt:
     secret-key: BlueMoonAMS2026SecretKeyForJWTTokenGenerationDoNotUseInProduction
     expiration-ms: 86400000
-
-
+  google:
+    # Thay bằng Client ID thật từ Google Cloud Console
+    # Dạng: xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+    client-id: 553757322807-spvpjrtctpntbt6onovneqptc3l5p919.apps.googleusercontent.com
