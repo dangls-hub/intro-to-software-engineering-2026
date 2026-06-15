@@ -13,6 +13,7 @@ import {
   FileCheck,
   Home,
   LayoutDashboard,
+  Megaphone,
   MessageSquare,
   Receipt,
   UserRound,
@@ -43,10 +44,12 @@ import ResidentDashboardPage from './features/dashboard/pages/ResidentDashboardP
 import ProfilePage from './features/profile/pages/ProfilePage';
 import ResidentReportsPage from './features/reports/pages/ResidentReportsPage';
 import ReportsPage from './features/reports/pages/ReportsPage';
+import AnnouncementsPage from './features/announcements/pages/AnnouncementsPage';
 
 /** Danh sách nav items cho ADMIN và STAFF */
 const adminStaffNavItems = [
   { to: '/', label: 'Tổng quan', icon: LayoutDashboard, end: true },
+  { to: '/announcements', label: 'Bảng tin', icon: Megaphone },
   { to: '/apartments', label: 'Căn hộ', icon: Building2 },
   { to: '/residents', label: 'Cư dân', icon: Users },
   { to: '/fees', label: 'Khoản thu', icon: Receipt },
@@ -57,6 +60,7 @@ const adminStaffNavItems = [
 /** Danh sách nav items cho RESIDENT (cư dân) */
 const residentNavItems = [
   { to: '/', label: 'Trang chủ', icon: Home, end: true },
+  { to: '/announcements', label: 'Bảng tin', icon: Megaphone },
   { to: '/profile', label: 'Hồ sơ', icon: UserRound },
   { to: '/my-fees', label: 'Khoản thu', icon: Receipt },
   { to: '/my-payments', label: 'Thanh toán', icon: CreditCard },
@@ -150,6 +154,7 @@ function AppLayout() {
           {isResident ? (
             <Routes>
               <Route element={<ResidentDashboardPage />} index />
+              <Route element={<AnnouncementsPage />} path="announcements" />
               <Route element={<ProfilePage />} path="profile" />
               <Route element={<FeesPage role={role} />} path="my-fees" />
               <Route element={<PaymentsPage role={role} />} path="my-payments" />
@@ -159,6 +164,7 @@ function AppLayout() {
           ) : (
             <Routes>
               <Route element={<DashboardPage />} index />
+              <Route element={<AnnouncementsPage />} path="announcements" />
               <Route element={<ApartmentsPage />} path="apartments" />
               <Route element={<ResidentsPage />} path="residents" />
               <Route element={<ApprovalsPage />} path="approvals" />
