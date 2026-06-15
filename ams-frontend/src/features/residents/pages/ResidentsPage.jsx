@@ -46,6 +46,9 @@ const approvalMap = {
 
 function getApartmentLabel(resident) {
   return (
+    resident.apartmentRoomNumber ||
+    resident.apartment?.roomNumber ||
+    resident.household?.apartment?.roomNumber ||
     resident.apartmentCode ||
     resident.roomNumber ||
     resident.apartment?.roomNumber ||

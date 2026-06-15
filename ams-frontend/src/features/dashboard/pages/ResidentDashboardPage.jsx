@@ -1,14 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   CreditCard,
   Home,
   Receipt,
   User,
+  Megaphone,
+  Calendar,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../../store/authStore';
 import { apiClient } from '../../../lib/apiClient';
 import StatCard from '../../../components/ui/StatCard';
+import { fetchAnnouncements } from '../../announcements/api/announcementsApi';
 
 /* ── Design tokens (hardcoded for section-level dark/beige contrast) ── */
 const GOLD  = '#c9a96e';
@@ -28,19 +33,29 @@ function ResidentDashboardPage() {
   const greeting =
     now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
-  const aptInfo = user?.apartmentId
-    ? { id: user.apartmentId, code: user.apartmentCode }
-    : null;
+  const aptInfo = useMemo(() => {
+    return user?.apartmentId
+      ? { id: user.apartmentId, code: user.apartmentCode }
+      : null;
+  }, [user?.apartmentId, user?.apartmentCode]);
 
   const [stats,     setStats]     = useState({ unpaidCount: 0, totalPaid: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [health,    setHealth]    = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
+  const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(true);
 
   useEffect(() => {
     async function checkHealthAndLoadData() {
       apiClient('/health', { token: null })
         .then(() => setHealth(true))
         .catch(() => setHealth(false));
+
+      setIsAnnouncementsLoading(true);
+      fetchAnnouncements()
+        .then(data => setAnnouncements(data.slice(0, 3)))
+        .catch(err => console.error('Error fetching announcements:', err))
+        .finally(() => setIsAnnouncementsLoading(false));
 
       if (!aptInfo) return;
       setIsLoading(true);
@@ -70,7 +85,7 @@ function ResidentDashboardPage() {
     }
 
     checkHealthAndLoadData();
-  }, [user, aptInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [aptInfo]); // eslint-disable-line react-hooks/exhaustive-deps
   /* ── End preserved logic ──────────────────────────── */
 
   const displayName = user?.fullName || user?.username || 'Cư dân';
@@ -262,6 +277,138 @@ function ResidentDashboardPage() {
             delay={160}
           />
         </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          SECTION 2.5 — ANNOUNCEMENTS & EVENTS (glass/border cards)
+          ══════════════════════════════════════════════ */}
+      <section
+        className="db-section"
+        style={{ paddingTop: '12px', paddingBottom: '52px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+          <div>
+            <p style={{ ...EYEBROW_LIGHT, marginBottom: '6px' }}>Bảng tin tòa nhà</p>
+            <h2 style={{
+              ...SERIF,
+              color: 'var(--text-heading)',
+              fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
+              fontWeight: 800,
+              margin: 0,
+              letterSpacing: '-0.025em',
+            }}>
+              Thông báo & Sự kiện mới nhất
+            </h2>
+          </div>
+          <Link
+            to="/announcements"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: 'var(--accent)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              textDecoration: 'none',
+              transition: 'color 0.2s',
+            }}
+          >
+            Xem tất cả <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {isAnnouncementsLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+            <span className="spinner" style={{ marginRight: '8px' }} /> Đang tải bảng tin...
+          </div>
+        ) : announcements.length === 0 ? (
+          <div className="workspace-panel liquid-glass" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Không có thông báo hoặc sự kiện mới.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            {announcements.map((item) => {
+              const isEvent = item.type === 'EVENT';
+              const Icon = isEvent ? Calendar : Megaphone;
+              return (
+                <Link
+                  key={item.id}
+                  to="/announcements"
+                  className="workspace-panel liquid-glass"
+                  style={{
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '180px',
+                    border: '1px solid var(--border)',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span
+                        className={`status-badge ${isEvent ? 'paid' : 'pending'}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 700 }}
+                      >
+                        <Icon size={11} />
+                        {isEvent ? 'Sự kiện' : 'Thông báo'}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+                    <h4 style={{
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      color: 'var(--text-heading)',
+                      margin: '0 0 8px 0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}>
+                      {item.title}
+                    </h4>
+                    <p style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      lineHeight: '1.4',
+                      margin: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                    }}>
+                      {item.content}
+                    </p>
+                  </div>
+                  {isEvent && item.eventDate && (
+                    <div style={{
+                      marginTop: '12px',
+                      fontSize: '0.75rem',
+                      color: 'var(--accent)',
+                      fontWeight: 600,
+                      background: 'var(--accent-subtle)',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      alignSelf: 'flex-start',
+                    }}>
+                      <Calendar size={12} />
+                      {new Date(item.eventDate).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ══════════════════════════════════════════════
