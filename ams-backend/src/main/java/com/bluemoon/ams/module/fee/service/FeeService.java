@@ -6,6 +6,8 @@ import com.bluemoon.ams.module.fee.dto.FeeResponse;
 import com.bluemoon.ams.module.fee.entity.Fee;
 import com.bluemoon.ams.module.fee.mapper.FeeMapper;
 import com.bluemoon.ams.module.fee.repository.FeeRepository;
+import com.bluemoon.ams.module.payment.repository.PaymentRepository;
+import com.bluemoon.ams.module.payment.repository.PaymentRequestRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +23,15 @@ public class FeeService {
 
     private final FeeRepository feeRepository;
     private final FeeMapper feeMapper;
+    private final PaymentRepository paymentRepository;
+    private final PaymentRequestRepository paymentRequestRepository;
 
-    public FeeService(FeeRepository feeRepository, FeeMapper feeMapper) {
+    public FeeService(FeeRepository feeRepository, FeeMapper feeMapper,
+                      PaymentRepository paymentRepository, PaymentRequestRepository paymentRequestRepository) {
         this.feeRepository = feeRepository;
         this.feeMapper = feeMapper;
+        this.paymentRepository = paymentRepository;
+        this.paymentRequestRepository = paymentRequestRepository;
     }
 
     /**
@@ -84,6 +91,10 @@ public class FeeService {
         if (!feeRepository.existsById(id)) {
             throw new ResourceNotFoundException("Khoản thu", id);
         }
+        if (paymentRepository.existsByFeeId(id)) {
+            throw new IllegalArgumentException("Không thể xóa khoản thu này vì đã có cư dân nộp tiền.");
+        }
+        paymentRequestRepository.deleteByFeeId(id);
         feeRepository.deleteById(id);
     }
 }

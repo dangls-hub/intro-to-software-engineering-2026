@@ -24,3 +24,5 @@ app:
   jwt:
     secret-key: BlueMoonAMS2026TestSecretKeyForJWTTokenGenerationOnly
     expiration-ms: 86400000
+  google:
+    client-id: dummy-client-id-for-testing

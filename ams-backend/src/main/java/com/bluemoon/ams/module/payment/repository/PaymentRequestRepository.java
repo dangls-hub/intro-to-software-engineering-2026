@@ -21,5 +21,7 @@ public interface PaymentRequestRepository extends JpaRepository<PaymentRequest, 
 
     List<PaymentRequest> findBySubmittedByIdOrderByCreatedAtDesc(Long userId);
 
+    void deleteByFeeId(Long feeId);
+
     long countByStatus(PaymentRequestStatus status);
 }

@@ -15,6 +15,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByFeeIdOrderByPaymentDateDesc(Long feeId);
 
+    boolean existsByFeeId(Long feeId);
+
     @Query("SELECT p FROM Payment p WHERE p.fee.apartmentId = :apartmentId ORDER BY p.paymentDate DESC")
     List<Payment> findByApartmentId(@Param("apartmentId") Long apartmentId);
 

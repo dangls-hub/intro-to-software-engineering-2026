@@ -13,6 +13,7 @@ import {
   FileCheck,
   Home,
   LayoutDashboard,
+  MessageSquare,
   Receipt,
   UserRound,
   Users,
@@ -40,6 +41,8 @@ import PaymentsPage from './features/payments/pages/PaymentsPage';
 import PaymentApprovalsPage from './features/payments/pages/PaymentApprovalsPage';
 import ResidentDashboardPage from './features/dashboard/pages/ResidentDashboardPage';
 import ProfilePage from './features/profile/pages/ProfilePage';
+import ResidentReportsPage from './features/reports/pages/ResidentReportsPage';
+import ReportsPage from './features/reports/pages/ReportsPage';
 
 /** Danh sách nav items cho ADMIN và STAFF */
 const adminStaffNavItems = [
@@ -48,6 +51,7 @@ const adminStaffNavItems = [
   { to: '/residents', label: 'Cư dân', icon: Users },
   { to: '/fees', label: 'Khoản thu', icon: Receipt },
   { to: '/payments', label: 'Thanh toán', icon: CreditCard },
+  { to: '/reports', label: 'Ý kiến cư dân', icon: MessageSquare },
 ];
 
 /** Danh sách nav items cho RESIDENT (cư dân) */
@@ -56,6 +60,7 @@ const residentNavItems = [
   { to: '/profile', label: 'Hồ sơ', icon: UserRound },
   { to: '/my-fees', label: 'Khoản thu', icon: Receipt },
   { to: '/my-payments', label: 'Thanh toán', icon: CreditCard },
+  { to: '/my-reports', label: 'Phản ánh', icon: MessageSquare },
 ];
 
 function AppLayout() {
@@ -148,6 +153,7 @@ function AppLayout() {
               <Route element={<ProfilePage />} path="profile" />
               <Route element={<FeesPage role={role} />} path="my-fees" />
               <Route element={<PaymentsPage role={role} />} path="my-payments" />
+              <Route element={<ResidentReportsPage />} path="my-reports" />
               <Route element={<Navigate replace to="/" />} path="*" />
             </Routes>
           ) : (
@@ -160,6 +166,7 @@ function AppLayout() {
               <Route element={<FeesByApartmentPage />} path="fees-by-apartment" />
               <Route element={<PaymentsPage role={role} />} path="payments" />
               <Route element={<PaymentApprovalsPage />} path="payment-approvals" />
+              <Route element={<ReportsPage />} path="reports" />
               <Route element={<Navigate replace to="/" />} path="*" />
             </Routes>
           )}
