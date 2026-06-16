@@ -14,6 +14,8 @@ import com.bluemoon.ams.module.payment.repository.PaymentRequestRepository;
 import com.bluemoon.ams.module.payment.repository.PaymentRepository;
 import com.bluemoon.ams.module.payment.service.PaymentRequestService;
 import com.bluemoon.ams.module.payment.service.PaymentService;
+import com.bluemoon.ams.module.notification.service.NotificationService;
+import com.bluemoon.ams.module.auth.entity.Role;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +44,7 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
     private final UserRepository userRepository;
     private final PaymentRequestMapper paymentRequestMapper;
     private final PaymentService paymentService;
+    private final NotificationService notificationService;
 
     @Value("${app.upload.proof-dir:uploads/proofs}")
     private String proofUploadDir;
@@ -88,6 +91,19 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
                 .build();
 
         request = paymentRequestRepository.save(request);
+
+        // Send notification to all ADMIN users
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createAndSendNotification(
+                    admin.getId(),
+                    submitter.getId(),
+                    "NEW_PAYMENT_REQUEST",
+                    "Có một yêu cầu duyệt thanh toán phí " + fee.getName() + " mới từ cư dân.",
+                    "/payment-approvals"
+            );
+        }
+
         return paymentRequestMapper.toResponse(request);
     }
 
@@ -162,6 +178,17 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
 
         paymentService.recordPayment(paymentDto, reviewerUsername);
 
+        // Send notification to submitter
+        if (request.getSubmittedBy() != null) {
+            notificationService.createAndSendNotification(
+                    request.getSubmittedBy().getId(),
+                    reviewer.getId(),
+                    "PAYMENT_REQUEST_APPROVED",
+                    "Yêu cầu thanh toán của bạn cho khoản phí " + request.getFee().getName() + " đã được phê duyệt.",
+                    "/my-fees"
+            );
+        }
+
         return paymentRequestMapper.toResponse(request);
     }
 
@@ -183,6 +210,17 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
         request.setReviewNote(reviewNote);
         request.setReviewedAt(LocalDateTime.now());
         paymentRequestRepository.save(request);
+
+        // Send notification to submitter
+        if (request.getSubmittedBy() != null) {
+            notificationService.createAndSendNotification(
+                    request.getSubmittedBy().getId(),
+                    reviewer.getId(),
+                    "PAYMENT_REQUEST_REJECTED",
+                    "Yêu cầu thanh toán của bạn cho khoản phí " + request.getFee().getName() + " đã bị từ chối.",
+                    "/my-fees"
+            );
+        }
 
         return paymentRequestMapper.toResponse(request);
     }

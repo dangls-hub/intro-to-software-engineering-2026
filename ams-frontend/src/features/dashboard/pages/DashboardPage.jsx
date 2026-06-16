@@ -111,7 +111,7 @@ function DashboardPage() {
 
       <section
         className="db-section"
-        style={{ paddingTop: '20px', paddingBottom: '20px' }}
+        style={{ paddingTop: '20px', paddingBottom: '0px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
