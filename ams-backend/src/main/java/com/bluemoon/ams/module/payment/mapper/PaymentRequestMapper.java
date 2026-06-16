@@ -4,14 +4,14 @@ import com.bluemoon.ams.module.apartment.entity.Apartment;
 import com.bluemoon.ams.module.apartment.repository.ApartmentRepository;
 import com.bluemoon.ams.module.payment.dto.PaymentRequestResponse;
 import com.bluemoon.ams.module.payment.entity.PaymentRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class PaymentRequestMapper {
 
-    private final ApartmentRepository apartmentRepository;
+    @Autowired
+    private ApartmentRepository apartmentRepository;
 
     public PaymentRequestResponse toResponse(PaymentRequest entity) {
         PaymentRequestResponse r = new PaymentRequestResponse();

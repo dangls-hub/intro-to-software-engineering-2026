@@ -17,7 +17,7 @@ import com.bluemoon.ams.module.payment.service.PaymentService;
 import com.bluemoon.ams.module.notification.service.NotificationService;
 import com.bluemoon.ams.module.auth.entity.Role;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,16 +35,22 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PaymentRequestServiceImpl implements PaymentRequestService {
 
-    private final PaymentRequestRepository paymentRequestRepository;
-    private final PaymentRepository paymentRepository;
-    private final FeeRepository feeRepository;
-    private final UserRepository userRepository;
-    private final PaymentRequestMapper paymentRequestMapper;
-    private final PaymentService paymentService;
-    private final NotificationService notificationService;
+    @Autowired
+    private PaymentRequestRepository paymentRequestRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private FeeRepository feeRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PaymentRequestMapper paymentRequestMapper;
+    @Autowired
+    private PaymentService paymentService;
+    @Autowired
+    private NotificationService notificationService;
 
     @Value("${app.upload.proof-dir:uploads/proofs}")
     private String proofUploadDir;

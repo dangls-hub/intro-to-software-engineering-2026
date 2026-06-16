@@ -6,7 +6,7 @@ import com.bluemoon.ams.module.resident.dto.ResidentRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentResponse;
 import com.bluemoon.ams.module.resident.service.ResidentService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/residents")
-@RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class ResidentController {
     /* Chứa các API liên quan đến cư dân: tạo, cập nhật, xoá, lấy thông tin, ... Các API này chỉ cho phép ADMIN và STAFF truy cập
      */
 
-    private final ResidentService residentService;
+    @Autowired
+    private ResidentService residentService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ResidentResponse>>> getAllResidents(
