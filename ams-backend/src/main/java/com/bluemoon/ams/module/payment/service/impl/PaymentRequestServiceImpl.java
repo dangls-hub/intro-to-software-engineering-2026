@@ -100,7 +100,7 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
                     submitter.getId(),
                     "NEW_PAYMENT_REQUEST",
                     "Có một yêu cầu duyệt thanh toán phí " + fee.getName() + " mới từ cư dân.",
-                    "/payment-requests"
+                    "/payment-approvals"
             );
         }
 

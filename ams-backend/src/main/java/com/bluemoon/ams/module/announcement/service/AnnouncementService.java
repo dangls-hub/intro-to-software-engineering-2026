@@ -66,7 +66,7 @@ public class AnnouncementService {
                     postedBy.getId(),
                     "NEW_ANNOUNCEMENT",
                     "Thông báo mới từ BQL: " + saved.getTitle(),
-                    "/dashboard"
+                    "/announcements"
             );
         }
 

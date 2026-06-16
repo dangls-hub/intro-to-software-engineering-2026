@@ -74,6 +74,26 @@ public class NotificationService {
     }
 
     @Transactional
+    public void deleteNotification(Long notificationId, Long userId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        
+        if (!notification.getRecipient().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized to access this notification");
+        }
+
+        notificationRepository.delete(notification);
+    }
+
+    @Transactional
+    public void deleteAllNotifications(Long userId) {
+        List<Notification> userNotifications = notificationRepository.findAll().stream()
+                .filter(n -> n.getRecipient().getId().equals(userId))
+                .collect(Collectors.toList());
+        notificationRepository.deleteAll(userNotifications);
+    }
+
+    @Transactional
     public void createAndSendNotification(Long recipientId, Long senderId, String type, String contentStr, String link) {
         User recipient = userRepository.findById(recipientId)
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
