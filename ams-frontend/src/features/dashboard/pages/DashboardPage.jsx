@@ -117,7 +117,7 @@ function DashboardPage() {
           <div>
             <p style={{ color: 'rgba(139,108,62,0.7)', fontSize: '0.73rem', fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase', margin: 0 }}>Quản lý tin tức</p>
             <h2 style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "var(--font-display)",
               color: 'var(--text-heading)',
               fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
               fontWeight: 800,

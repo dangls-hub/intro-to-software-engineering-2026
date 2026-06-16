@@ -18,7 +18,7 @@ import {
 import { useToast } from '../../../components/ui/Toast';
 
 /* ── Design tokens ─────────────────────────────────── */
-const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
+const SERIF = { fontFamily: "var(--font-display)" };
 const GOLD  = '#c9a96e';
 
 /* ── Premium status config (replaces old statusMap) ── */
