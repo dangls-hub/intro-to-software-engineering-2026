@@ -20,7 +20,7 @@ import {
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../store/authStore';
 
-const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
+const SERIF = { fontFamily: "var(--font-display)" };
 
 const emptyRequest = {
   apartmentId: '',
