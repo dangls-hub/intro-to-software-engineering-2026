@@ -180,10 +180,7 @@ public class ResidentServiceImpl implements ResidentService {
         }
 
         Apartment apartment = resolveApartment(request.getApartmentId());
-        Resident resident = residentRepository
-                .findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
-                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING))
-                .orElseGet(Resident::new);
+        Resident resident = findMostRelevantResident(user).orElseGet(Resident::new);
 
         validateIdentityUnique(request.getIdentityNumber(), resident.getId());
 
