@@ -37,4 +37,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Tìm user theo Google ID (sub) — dùng cho Google OAuth login
      */
     Optional<User> findByGoogleId(String googleId);
+
+    /**
+     * Tìm user theo vai trò
+     */
+    java.util.List<User> findByRole(com.bluemoon.ams.module.auth.entity.Role role);
 }

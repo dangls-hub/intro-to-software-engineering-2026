@@ -1,0 +1,241 @@
+.notification-container {
+  position: relative;
+  display: inline-block;
+  font-family: Arial, sans-serif;
+}
+
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 8px;
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #ff3b30;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+  border: 2px solid white;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 350px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-top: 10px;
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid #eaeaea;
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.dropdown-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.mark-read-btn {
+  background: none;
+  border: none;
+  color: #0066cc;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.mark-read-btn:hover {
+  text-decoration: underline;
+}
+
+.dropdown-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+  background-color: #f9f9f9;
+}
+
+.notification-item.unread {
+  background-color: #f0f7ff;
+}
+
+.notification-item.unread .noti-content p {
+  font-weight: bold;
+}
+
+.notification-item-content {
+  display: flex;
+  flex: 1;
+  cursor: pointer;
+}
+
+.notification-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-width: 24px;
+}
+
+.noti-icon {
+  font-size: 20px;
+  margin-right: 12px;
+}
+
+.noti-content {
+  flex: 1;
+}
+
+.noti-content p {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.noti-time {
+  font-size: 12px;
+  color: #888;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #0066cc;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+
+.delete-noti-btn {
+  background-color: #f1f3f4;
+  border: none;
+  color: #666;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 16px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.delete-noti-btn:hover {
+  background-color: #ffebee;
+  color: #ff3b30;
+  text-decoration: none;
+}
+
+.loading-spinner, .no-notifications, .end-of-list {
+  text-align: center;
+  padding: 16px;
+  color: #888;
+  font-size: 14px;
+}
+
+/* --- Dark Theme Overrides --- */
+[data-theme="dark"] .notification-dropdown {
+  background-color: #1a1a1a;
+  border-color: #333;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .dropdown-header {
+  border-bottom-color: #333;
+}
+
+[data-theme="dark"] .dropdown-header h4 {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .mark-read-btn {
+  color: #66b3ff;
+}
+
+[data-theme="dark"] .notification-item {
+  border-bottom-color: #2a2a2a;
+}
+
+[data-theme="dark"] .notification-item:hover {
+  background-color: #252525;
+}
+
+[data-theme="dark"] .notification-item.unread {
+  background-color: #2c3645;
+}
+
+[data-theme="dark"] .noti-content p {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .noti-time {
+  color: #aaa;
+}
+
+[data-theme="dark"] .delete-noti-btn {
+  background-color: #333;
+  color: #ccc;
+}
+
+[data-theme="dark"] .delete-noti-btn:hover {
+  background-color: rgba(255, 59, 48, 0.2);
+  color: #ff453a;
+}
+
+[data-theme="dark"] .loading-spinner, 
+[data-theme="dark"] .no-notifications, 
+[data-theme="dark"] .end-of-list {
+  color: #aaa;
+}
+
+/* --- Delete All Button --- */
+.delete-all-btn {
+  background-color: transparent;
+  border: 1px solid #ff3b30;
+  color: #ff3b30;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.delete-all-btn:hover {
+  background-color: #ff3b30;
+  color: white;
+}
+
+[data-theme="dark"] .delete-all-btn {
+  border-color: #ff453a;
+  color: #ff453a;
+}
+
+[data-theme="dark"] .delete-all-btn:hover {
+  background-color: #ff453a;
+  color: white;
+}

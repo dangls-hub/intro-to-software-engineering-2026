@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'window',
+  },
   cacheDir: '.cache/vite',
   server: {
     port: 5173,
