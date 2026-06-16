@@ -54,4 +54,18 @@ public class NotificationController {
         notificationService.markAsRead(id, userId);
         return ResponseEntity.ok(Map.of("success", true, "message", "Marked as read"));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteNotification(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
+        notificationService.deleteNotification(id, userId);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Notification deleted"));
+    }
+
+    @DeleteMapping("/all")
+    public ResponseEntity<?> deleteAllNotifications() {
+        Long userId = getCurrentUserId();
+        notificationService.deleteAllNotifications(userId);
+        return ResponseEntity.ok(Map.of("success", true, "message", "All notifications deleted"));
+    }
 }

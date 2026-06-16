@@ -18,6 +18,7 @@ public class NotificationResponse {
     private String type;
     private String content;
     private String link;
+    @com.fasterxml.jackson.annotation.JsonProperty("isRead")
     private boolean isRead;
     private LocalDateTime createdAt;
 }

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const NotificationDropdown = ({ notifications = [], loading, hasMore, onLoadMore, onMarkAllAsRead, onMarkAsRead }) => {
+const NotificationDropdown = ({ notifications = [], loading, hasMore, onLoadMore, onMarkAllAsRead, onMarkAsRead, onDeleteNotification, onDeleteAllNotifications, onClose }) => {
+  const navigate = useNavigate();
   
   const handleScroll = (e) => {
     const { scrollTop, clientHeight, scrollHeight } = e.target;
@@ -26,30 +28,51 @@ const NotificationDropdown = ({ notifications = [], loading, hasMore, onLoadMore
             <div 
               key={noti.id} 
               className={`notification-item ${!noti.isRead ? 'unread' : ''}`}
-              onClick={() => {
-                if (!noti.isRead) onMarkAsRead(noti.id);
-                if (noti.link) window.location.href = noti.link;
-              }}
             >
-              <div className="noti-icon">
-                {noti.type === 'NEW_COMMENT' && '💬'}
-                {noti.type === 'SYSTEM_MAINTENANCE' && '⚙️'}
-                {noti.type === 'NEW_MESSAGE' && '✉️'}
+              <div className="notification-item-content" onClick={async () => {
+                if (!noti.isRead) await onMarkAsRead(noti.id);
+                if (noti.link) {
+                  navigate(noti.link);
+                  if (onClose) onClose();
+                }
+              }}>
+                <div className="noti-icon">
+                  {noti.type === 'NEW_COMMENT' && '💬'}
+                  {noti.type === 'SYSTEM_MAINTENANCE' && '⚙️'}
+                  {noti.type === 'NEW_MESSAGE' && '✉️'}
+                  {(!['NEW_COMMENT', 'SYSTEM_MAINTENANCE', 'NEW_MESSAGE'].includes(noti.type)) && '🔔'}
+                </div>
+                <div className="noti-content">
+                  <p>{noti.content}</p>
+                  <span className="noti-time">
+                    {new Date(noti.createdAt || Date.now()).toLocaleString()}
+                  </span>
+                </div>
               </div>
-              <div className="noti-content">
-                <p>{noti.content}</p>
-                <span className="noti-time">
-                  {new Date(noti.createdAt || Date.now()).toLocaleString()}
-                </span>
+              <div className="notification-actions">
+                {!noti.isRead && <span className="unread-dot"></span>}
+                <button 
+                  className="delete-noti-btn" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteNotification(noti.id);
+                  }}
+                  title="Xóa thông báo"
+                >
+                  Xóa
+                </button>
               </div>
-              {!noti.isRead && <span className="unread-dot"></span>}
             </div>
           ))
         )}
         
         {loading && <div className="loading-spinner">Đang tải...</div>}
         {!hasMore && notifications.length > 0 && (
-          <div className="end-of-list">Hết thông báo</div>
+          <div className="end-of-list">
+            <button className="delete-all-btn" onClick={onDeleteAllNotifications}>
+              Xóa hết thông báo
+            </button>
+          </div>
         )}
       </div>
     </div>

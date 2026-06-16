@@ -119,11 +119,43 @@ const NotificationBell = ({ userId, token }) => {
     }
   };
 
+  const deleteNotification = async (id) => {
+    try {
+      await fetch(`http://localhost:8080/api/v1/notifications/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setNotifications(prev => {
+        const noti = prev.find(n => n.id === id);
+        if (noti && !noti.isRead) {
+          setUnreadCount(count => Math.max(0, count - 1));
+        }
+        return prev.filter(n => n.id !== id);
+      });
+    } catch (error) {
+      console.error("Delete notification failed", error);
+    }
+  };
+
   const loadMore = () => {
     if (!loading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchNotifications(nextPage);
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    try {
+      await fetch(`http://localhost:8080/api/v1/notifications/all`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setNotifications([]);
+      setUnreadCount(0);
+      setHasMore(false);
+    } catch (error) {
+      console.error("Delete all notifications failed", error);
     }
   };
 
@@ -149,6 +181,9 @@ const NotificationBell = ({ userId, token }) => {
           onLoadMore={loadMore}
           onMarkAllAsRead={markAllAsRead}
           onMarkAsRead={markAsRead}
+          onDeleteNotification={deleteNotification}
+          onDeleteAllNotifications={deleteAllNotifications}
+          onClose={() => setIsOpen(false)}
         />
       )}
     </div>

@@ -14,6 +14,7 @@ import com.bluemoon.ams.module.resident.entity.Household;
 import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.mapper.ResidentMapper;
+import java.util.List;
 import com.bluemoon.ams.module.resident.repository.HouseholdRepository;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 import com.bluemoon.ams.module.resident.service.ResidentService;
@@ -39,6 +40,7 @@ public class ResidentServiceImpl implements ResidentService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final ResidentMapper residentMapper;
+    private final com.bluemoon.ams.module.notification.service.NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -202,6 +204,19 @@ public class ResidentServiceImpl implements ResidentService {
 
         Resident saved = residentRepository.save(resident);
         log.info("Cư dân {} gửi yêu cầu vào căn hộ {}", username, apartment.getRoomNumber());
+
+        // Notify admins
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createAndSendNotification(
+                    admin.getId(),
+                    user.getId(),
+                    "NEW_RESIDENT_REQUEST",
+                    "Cư dân " + user.getFullName() + " yêu cầu gia nhập căn hộ " + apartment.getRoomNumber() + ".",
+                    "/approvals"
+            );
+        }
+
         return residentMapper.toResponse(saved);
     }
 
@@ -242,6 +257,18 @@ public class ResidentServiceImpl implements ResidentService {
 
         resident = residentRepository.save(resident);
         log.info("Phê duyệt cư dân ID={} bởi {}", id, approverUsername);
+
+        // Notify resident
+        if (resident.getUser() != null) {
+            notificationService.createAndSendNotification(
+                    resident.getUser().getId(),
+                    resident.getApprovedByUser() != null ? resident.getApprovedByUser().getId() : null,
+                    "RESIDENT_REQUEST_APPROVED",
+                    "Yêu cầu gia nhập căn hộ của bạn đã được phê duyệt.",
+                    "/profile"
+            );
+        }
+
         return residentMapper.toResponse(resident);
     }
 
@@ -264,6 +291,18 @@ public class ResidentServiceImpl implements ResidentService {
 
         resident = residentRepository.save(resident);
         log.info("Từ chối cư dân ID={} bởi {} lý do: {}", id, approverUsername, reason);
+
+        // Notify resident
+        if (resident.getUser() != null) {
+            notificationService.createAndSendNotification(
+                    resident.getUser().getId(),
+                    resident.getApprovedByUser() != null ? resident.getApprovedByUser().getId() : null,
+                    "RESIDENT_REQUEST_REJECTED",
+                    "Yêu cầu gia nhập căn hộ của bạn đã bị từ chối. Lý do: " + reason,
+                    "/profile"
+            );
+        }
+
         return residentMapper.toResponse(resident);
     }
 
