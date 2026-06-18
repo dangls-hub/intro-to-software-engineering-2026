@@ -4,6 +4,8 @@ import com.bluemoon.ams.module.fee.entity.Fee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,4 +28,9 @@ public interface FeeRepository extends JpaRepository<Fee, Long> {
      * Đếm số khoản thu theo trạng thái (dùng cho Dashboard — tỷ lệ thanh toán).
      */
     long countByStatus(String status);
+
+    /**
+     * Khoản thu chưa tất toán đã quá hạn — dùng cho job nhắc nợ.
+     */
+    List<Fee> findByStatusInAndDueDateBefore(Collection<String> statuses, LocalDate date);
 }

@@ -49,6 +49,8 @@ public class ResidentServiceImpl implements ResidentService {
     private ResidentMapper residentMapper;
     @Autowired
     private com.bluemoon.ams.module.notification.service.NotificationService notificationService;
+    @Autowired
+    private com.bluemoon.ams.common.service.BlueMoonEmailService blueMoonEmailService;
 
     @Override
     @Transactional(readOnly = true)
@@ -272,6 +274,17 @@ public class ResidentServiceImpl implements ResidentService {
                     "Yêu cầu gia nhập căn hộ của bạn đã được phê duyệt.",
                     "/profile"
             );
+
+            // Email chào mừng cư dân (nếu tài khoản có email). Chạy @Async, không ảnh hưởng giao dịch.
+            String email = resident.getUser().getEmail();
+            if (email != null && !email.isBlank()) {
+                String apartmentNo = resident.getApartment() != null
+                        ? resident.getApartment().getRoomNumber()
+                        : (resident.getHousehold() != null && resident.getHousehold().getApartment() != null
+                            ? resident.getHousehold().getApartment().getRoomNumber() : "");
+                blueMoonEmailService.sendWelcomeEmail(
+                        email, resident.getFullName(), apartmentNo, "http://localhost:5173/login");
+            }
         }
 
         return residentMapper.toResponse(resident);

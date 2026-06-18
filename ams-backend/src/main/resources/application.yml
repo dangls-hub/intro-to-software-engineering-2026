@@ -20,8 +20,10 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: bmoonamin@gmail.com
-    password: rpoo dmer aban slae
+    # Credential lấy từ biến môi trường — KHÔNG hardcode secret vào repo.
+    # username giữ default tiện dev (không phải secret); password bắt buộc set qua MAIL_PASSWORD.
+    username: ${MAIL_USERNAME:bmoonamin@gmail.com}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
