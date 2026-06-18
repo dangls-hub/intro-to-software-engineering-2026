@@ -1,7 +1,9 @@
 package com.bluemoon.ams.module.report.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 
+@Builder
 public class ReviewReportRequest {
 
     @NotBlank(message = "Trạng thái phê duyệt không được để trống")

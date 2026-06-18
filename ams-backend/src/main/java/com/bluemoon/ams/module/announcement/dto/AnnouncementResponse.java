@@ -1,5 +1,8 @@
 package com.bluemoon.ams.module.announcement.dto;
 
+import lombok.Builder;
+
+@Builder
 public class AnnouncementResponse {
     private Long id;
     private String title;

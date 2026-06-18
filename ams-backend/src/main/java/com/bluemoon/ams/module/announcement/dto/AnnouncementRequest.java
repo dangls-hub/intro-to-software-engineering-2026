@@ -1,7 +1,9 @@
 package com.bluemoon.ams.module.announcement.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 
+@Builder
 public class AnnouncementRequest {
     @NotBlank(message = "Tiêu đề không được để trống")
     private String title;

@@ -3,9 +3,11 @@ package com.bluemoon.ams.module.announcement.entity;
 import com.bluemoon.ams.module.auth.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.Builder;
 
 @Entity
 @Table(name = "announcements")
+@Builder
 public class Announcement {
 
     @Id

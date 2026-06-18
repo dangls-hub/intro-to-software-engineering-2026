@@ -2,11 +2,12 @@ package com.bluemoon.ams.module.report.entity;
 
 import com.bluemoon.ams.module.auth.entity.User;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
+import lombok.Builder;
 
 @Entity
 @Table(name = "resident_reports")
+@Builder
 public class ResidentReport {
 
     @Id

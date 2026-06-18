@@ -1,7 +1,9 @@
 package com.bluemoon.ams.module.report.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 
+@Builder
 public class ReportRequest {
 
     @NotBlank(message = "Tiêu đề không được để trống")

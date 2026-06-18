@@ -1,7 +1,13 @@
 package com.bluemoon.ams.module.report.dto;
 
 import java.time.LocalDateTime;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReportResponse {
 
     private Long id;
@@ -22,7 +28,6 @@ public class ReportResponse {
     private String createdAt;
     private String updatedAt;
 
-    public ReportResponse() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
