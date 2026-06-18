@@ -84,6 +84,53 @@ public class AuthController {
     }
 
     /**
+     * API gửi mã OTP tới email (xác thực đăng nhập/giao dịch)
+     * POST /api/v1/auth/otp/send
+     */
+    @PostMapping("/otp/send")
+    public ResponseEntity<ApiResponse<String>> sendOtp(@Valid @RequestBody OtpSendRequest request) {
+        authService.sendOtp(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Mã OTP đã được gửi tới email của bạn.", null));
+    }
+
+    /**
+     * API xác thực mã OTP
+     * POST /api/v1/auth/otp/verify
+     */
+    @PostMapping("/otp/verify")
+    public ResponseEntity<ApiResponse<Boolean>> verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
+        boolean valid = authService.verifyOtp(request.getEmail(), request.getOtp());
+        if (!valid) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mã OTP không đúng hoặc đã hết hạn."));
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Xác thực OTP thành công.", Boolean.TRUE));
+    }
+
+    /* ── OTP request DTOs ───────────────────────────── */
+
+    public static class OtpSendRequest {
+        @jakarta.validation.constraints.NotBlank(message = "Email không được để trống")
+        @jakarta.validation.constraints.Email(message = "Email không hợp lệ")
+        private String email;
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+    }
+
+    public static class OtpVerifyRequest {
+        @jakarta.validation.constraints.NotBlank(message = "Email không được để trống")
+        @jakarta.validation.constraints.Email(message = "Email không hợp lệ")
+        private String email;
+        @jakarta.validation.constraints.NotBlank(message = "Mã OTP không được để trống")
+        private String otp;
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getOtp() { return otp; }
+        public void setOtp(String otp) { this.otp = otp; }
+    }
+
+    /**
      * API đổi mật khẩu (cần đăng nhập)
      * POST /api/v1/auth/change-password
      */

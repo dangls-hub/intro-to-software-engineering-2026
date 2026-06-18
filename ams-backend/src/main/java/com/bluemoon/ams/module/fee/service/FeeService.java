@@ -7,6 +7,10 @@ import com.bluemoon.ams.module.fee.entity.Fee;
 import com.bluemoon.ams.module.fee.mapper.FeeMapper;
 import com.bluemoon.ams.module.fee.repository.FeeRepository;
 import com.bluemoon.ams.module.notification.service.NotificationService;
+import com.bluemoon.ams.common.service.BlueMoonEmailService;
+import com.bluemoon.ams.module.apartment.entity.Apartment;
+import com.bluemoon.ams.module.apartment.repository.ApartmentRepository;
+import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.payment.repository.PaymentRepository;
 import com.bluemoon.ams.module.payment.repository.PaymentRequestRepository;
 import com.bluemoon.ams.module.resident.entity.Household;
@@ -17,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,10 +41,14 @@ public class FeeService {
     private final NotificationService notificationService;
     private final ResidentRepository residentRepository;
     private final HouseholdRepository householdRepository;
+    private final ApartmentRepository apartmentRepository;
+    private final BlueMoonEmailService blueMoonEmailService;
 
     public FeeService(FeeRepository feeRepository, FeeMapper feeMapper,
                       PaymentRepository paymentRepository, PaymentRequestRepository paymentRequestRepository,
-                      NotificationService notificationService, ResidentRepository residentRepository, HouseholdRepository householdRepository) {
+                      NotificationService notificationService, ResidentRepository residentRepository,
+                      HouseholdRepository householdRepository, ApartmentRepository apartmentRepository,
+                      BlueMoonEmailService blueMoonEmailService) {
         this.feeRepository = feeRepository;
         this.feeMapper = feeMapper;
         this.paymentRepository = paymentRepository;
@@ -46,6 +56,8 @@ public class FeeService {
         this.notificationService = notificationService;
         this.residentRepository = residentRepository;
         this.householdRepository = householdRepository;
+        this.apartmentRepository = apartmentRepository;
+        this.blueMoonEmailService = blueMoonEmailService;
     }
 
     /**
@@ -107,12 +119,31 @@ public class FeeService {
             // Gửi thông báo
             for (Long uid : userIds) {
                 notificationService.createAndSendNotification(
-                        uid, 
-                        null, 
-                        "NEW_FEE", 
-                        "Khoản thu mới: " + saved.getName() + " đã được tạo cho căn hộ của bạn.", 
+                        uid,
+                        null,
+                        "NEW_FEE",
+                        "Khoản thu mới: " + saved.getName() + " đã được tạo cho căn hộ của bạn.",
                         "/my-fees"
                 );
+            }
+
+            // Email hoá đơn phí cho cư dân có email (gom trực tiếp + qua hộ gia đình, khử trùng lặp).
+            String roomNumber = apartmentRepository.findById(saved.getApartmentId())
+                    .map(Apartment::getRoomNumber).orElse("");
+            Map<Long, User> invoiceRecipients = new LinkedHashMap<>();
+            for (Resident r : residents) {
+                User u = r.getUser();
+                if (u != null && u.getEmail() != null && !u.getEmail().isBlank()) invoiceRecipients.put(u.getId(), u);
+            }
+            for (Household h : households) {
+                for (Resident r : residentRepository.findByHouseholdId(h.getId())) {
+                    User u = r.getUser();
+                    if (u != null && u.getEmail() != null && !u.getEmail().isBlank()) invoiceRecipients.put(u.getId(), u);
+                }
+            }
+            for (User u : invoiceRecipients.values()) {
+                blueMoonEmailService.sendMonthlyInvoice(
+                        u.getEmail(), u.getFullName(), roomNumber, saved.getName(), saved.getAmount());
             }
         }
 

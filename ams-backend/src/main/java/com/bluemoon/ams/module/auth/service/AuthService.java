@@ -7,6 +7,8 @@ import com.bluemoon.ams.module.auth.repository.UserRepository;
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.common.security.JwtUtil;
 import com.bluemoon.ams.common.service.EmailService;
+import com.bluemoon.ams.common.service.BlueMoonEmailService;
+import com.bluemoon.ams.common.service.OtpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +47,31 @@ public class AuthService {
     private ResidentRepository residentRepository;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private BlueMoonEmailService blueMoonEmailService;
+    @Autowired
+    private OtpService otpService;
 
     @Value("${app.google.client-id}")
     private String googleClientId;
+
+    /**
+     * Gửi mã OTP tới email người dùng (xác thực đăng nhập / giao dịch).
+     */
+    public void sendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản với email này"));
+        String code = otpService.generate(email);
+        blueMoonEmailService.sendOtpCode(email, user.getFullName(), code, OtpService.EXPIRATION_MINUTES);
+        log.info("OTP đã gửi tới {}", email);
+    }
+
+    /**
+     * Xác thực mã OTP. Trả về true nếu hợp lệ (và xoá mã sau khi dùng).
+     */
+    public boolean verifyOtp(String email, String code) {
+        return otpService.verify(email, code);
+    }
 
     /**
      * Xác thực user và trả JWT token
