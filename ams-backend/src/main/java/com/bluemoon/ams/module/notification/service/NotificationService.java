@@ -5,7 +5,7 @@ import com.bluemoon.ams.module.auth.repository.UserRepository;
 import com.bluemoon.ams.module.notification.dto.NotificationResponse;
 import com.bluemoon.ams.module.notification.entity.Notification;
 import com.bluemoon.ams.module.notification.repository.NotificationRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +19,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class NotificationService {
 
-    private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private NotificationRepository notificationRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public Map<String, Object> getUserNotifications(Long userId, int page, int limit) {
         Pageable pageable = PageRequest.of(page - 1, limit);

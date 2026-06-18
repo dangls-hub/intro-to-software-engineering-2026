@@ -18,8 +18,9 @@ import java.util.List;
 import com.bluemoon.ams.module.resident.repository.HouseholdRepository;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 import com.bluemoon.ams.module.resident.service.ResidentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -30,17 +31,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ResidentServiceImpl implements ResidentService {
+
+    private static final Logger log = LoggerFactory.getLogger(ResidentServiceImpl.class);
+
 // Chứa nghiệp vụ xử lý của dân cư: tạo, cập nhật, xoá, lấy thông tin, ...
-    private final ResidentRepository residentRepository;
-    private final HouseholdRepository householdRepository;
-    private final ApartmentRepository apartmentRepository;
-    private final UserRepository userRepository;
-    private final ResidentMapper residentMapper;
-    private final com.bluemoon.ams.module.notification.service.NotificationService notificationService;
+    @Autowired
+    private ResidentRepository residentRepository;
+    @Autowired
+    private HouseholdRepository householdRepository;
+    @Autowired
+    private ApartmentRepository apartmentRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ResidentMapper residentMapper;
+    @Autowired
+    private com.bluemoon.ams.module.notification.service.NotificationService notificationService;
+    @Autowired
+    private com.bluemoon.ams.common.service.BlueMoonEmailService blueMoonEmailService;
 
     @Override
     @Transactional(readOnly = true)
@@ -264,6 +274,17 @@ public class ResidentServiceImpl implements ResidentService {
                     "Yêu cầu gia nhập căn hộ của bạn đã được phê duyệt.",
                     "/profile"
             );
+
+            // Email chào mừng cư dân (nếu tài khoản có email). Chạy @Async, không ảnh hưởng giao dịch.
+            String email = resident.getUser().getEmail();
+            if (email != null && !email.isBlank()) {
+                String apartmentNo = resident.getApartment() != null
+                        ? resident.getApartment().getRoomNumber()
+                        : (resident.getHousehold() != null && resident.getHousehold().getApartment() != null
+                            ? resident.getHousehold().getApartment().getRoomNumber() : "");
+                blueMoonEmailService.sendWelcomeEmail(
+                        email, resident.getFullName(), apartmentNo, "http://localhost:5173/login");
+            }
         }
 
         return residentMapper.toResponse(resident);

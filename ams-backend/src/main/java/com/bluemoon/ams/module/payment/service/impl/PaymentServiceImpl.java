@@ -11,7 +11,7 @@ import com.bluemoon.ams.module.payment.entity.Payment;
 import com.bluemoon.ams.module.payment.mapper.PaymentMapper;
 import com.bluemoon.ams.module.payment.repository.PaymentRepository;
 import com.bluemoon.ams.module.payment.service.PaymentService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,16 +27,22 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-    private final PaymentRepository paymentRepository;
-    private final FeeRepository feeRepository;
-    private final UserRepository userRepository;
-    private final PaymentMapper paymentMapper;
-    private final NotificationService notificationService;
-    private final ResidentRepository residentRepository;
-    private final HouseholdRepository householdRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private FeeRepository feeRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PaymentMapper paymentMapper;
+    @Autowired
+    private NotificationService notificationService;
+    @Autowired
+    private ResidentRepository residentRepository;
+    @Autowired
+    private HouseholdRepository householdRepository;
 
     @Override
     @Transactional(readOnly = true)

@@ -6,7 +6,7 @@ import com.bluemoon.ams.module.report.dto.ReportResponse;
 import com.bluemoon.ams.module.report.dto.ReviewReportRequest;
 import com.bluemoon.ams.module.report.service.ResidentReportService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,10 +17,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/reports")
-@RequiredArgsConstructor
 public class ResidentReportController {
 
-    private final ResidentReportService reportService;
+    @Autowired
+    private ResidentReportService reportService;
 
     /**
      * POST /api/v1/reports — Resident submits a report.

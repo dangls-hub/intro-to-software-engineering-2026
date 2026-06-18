@@ -4,7 +4,7 @@ import com.bluemoon.ams.common.response.ApiResponse;
 import com.bluemoon.ams.module.payment.dto.PaymentRequestResponse;
 import com.bluemoon.ams.module.payment.dto.ReviewPaymentRequestDto;
 import com.bluemoon.ams.module.payment.service.PaymentRequestService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -26,10 +26,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/payment-requests")
-@RequiredArgsConstructor
 public class PaymentRequestController {
 
-    private final PaymentRequestService paymentRequestService;
+    @Autowired
+    private PaymentRequestService paymentRequestService;
 
     @Value("${app.upload.proof-dir:uploads/proofs}")
     private String proofUploadDir;

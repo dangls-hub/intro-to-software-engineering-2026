@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 import {
   Building2,
+  Car,
   ClipboardCheck,
   CreditCard,
   FileCheck,
@@ -46,6 +47,7 @@ import ResidentReportsPage from './features/reports/pages/ResidentReportsPage';
 import ReportsPage from './features/reports/pages/ReportsPage';
 import AnnouncementsPage from './features/announcements/pages/AnnouncementsPage';
 import ChatWidget from './features/chat/components/ChatWidget';
+import VehiclesPage from './features/vehicles/pages/VehiclesPage';
 
 /** Danh sách nav items cho ADMIN và STAFF */
 const adminStaffNavItems = [
@@ -53,6 +55,7 @@ const adminStaffNavItems = [
   { to: '/announcements', label: 'Bảng tin', icon: Megaphone },
   { to: '/apartments', label: 'Căn hộ', icon: Building2 },
   { to: '/residents', label: 'Cư dân', icon: Users },
+  { to: '/vehicles', label: 'Phương tiện', icon: Car },
   { to: '/fees', label: 'Khoản thu', icon: Receipt },
   { to: '/payments', label: 'Thanh toán', icon: CreditCard },
   { to: '/reports', label: 'Ý kiến cư dân', icon: MessageSquare },
@@ -145,7 +148,6 @@ function AppLayout() {
           onToggleTheme={toggleTheme}
           onLogout={logout}
         />
-
         <div className="content-shell">
           <AppHeader
             displayName={displayName}
@@ -169,6 +171,7 @@ function AppLayout() {
                 <Route element={<AnnouncementsPage />} path="announcements" />
                 <Route element={<ApartmentsPage />} path="apartments" />
                 <Route element={<ResidentsPage />} path="residents" />
+                <Route element={<VehiclesPage />} path="vehicles" />
                 <Route element={<ApprovalsPage />} path="approvals" />
                 <Route element={<FeesPage role={role} />} path="fees" />
                 <Route element={<FeesByApartmentPage />} path="fees-by-apartment" />
