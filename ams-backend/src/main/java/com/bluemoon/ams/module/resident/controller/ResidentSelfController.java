@@ -5,7 +5,7 @@ import com.bluemoon.ams.module.resident.dto.ApartmentJoinRequest;
 import com.bluemoon.ams.module.resident.dto.ResidentResponse;
 import com.bluemoon.ams.module.resident.service.ResidentService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -17,11 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/residents/me")
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('RESIDENT')")
 public class ResidentSelfController {
 
-    private final ResidentService residentService;
+    @Autowired
+    private ResidentService residentService;
 
     @GetMapping("/apartment-request")
     public ResponseEntity<ApiResponse<ResidentResponse>> getApartmentRequest(Authentication authentication) {

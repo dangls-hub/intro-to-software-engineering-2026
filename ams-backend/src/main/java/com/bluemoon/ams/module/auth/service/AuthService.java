@@ -7,8 +7,9 @@ import com.bluemoon.ams.module.auth.repository.UserRepository;
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.common.security.JwtUtil;
 import com.bluemoon.ams.common.service.EmailService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,14 +31,20 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Collections;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AuthService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final ResidentRepository residentRepository;
-    private final EmailService emailService;
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private ResidentRepository residentRepository;
+    @Autowired
+    private EmailService emailService;
 
     @Value("${app.google.client-id}")
     private String googleClientId;

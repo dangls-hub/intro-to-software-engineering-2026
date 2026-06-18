@@ -2,13 +2,9 @@ package com.bluemoon.ams.module.resident.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.time.LocalDate;
 
-@Data
 public class ResidentRequest {
-
     @NotBlank(message = "Vui lòng nhập họ tên")
     @Size(max = 200, message = "Họ tên không được vượt quá 200 ký tự")
     private String fullName;
@@ -21,17 +17,34 @@ public class ResidentRequest {
 
     private LocalDate dateOfBirth;
 
-    // Nam / Nữ / Khác
     private String gender;
 
-    // Chủ hộ/ Vợ/ Chồng/ Con cái/ Cha mẹ/ Anh chị em/ Khác
     private String relationshipType;
 
-    // Active/ Inactiva
     private String status;
 
     private Long householdId;
 
-    // Nếu ko có housholdID thì phải có apartmentID để liên kết với căn hộ
     private Long apartmentId;
+
+    public ResidentRequest() {}
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getIdentityNumber() { return identityNumber; }
+    public void setIdentityNumber(String identityNumber) { this.identityNumber = identityNumber; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public String getRelationshipType() { return relationshipType; }
+    public void setRelationshipType(String relationshipType) { this.relationshipType = relationshipType; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Long getHouseholdId() { return householdId; }
+    public void setHouseholdId(Long householdId) { this.householdId = householdId; }
+    public Long getApartmentId() { return apartmentId; }
+    public void setApartmentId(Long apartmentId) { this.apartmentId = apartmentId; }
 }

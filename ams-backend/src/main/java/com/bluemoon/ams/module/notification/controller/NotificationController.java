@@ -2,7 +2,7 @@ package com.bluemoon.ams.module.notification.controller;
 
 import com.bluemoon.ams.module.notification.service.NotificationService;
 // import com.bluemoon.ams.common.security.UserDetailsImpl; // Giả định dựa trên cấu trúc Spring Security thông thường
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,12 +12,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
-@RequiredArgsConstructor
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    @Autowired
+    private NotificationService notificationService;
 
-    private final com.bluemoon.ams.module.auth.repository.UserRepository userRepository;
+    @Autowired
+    private com.bluemoon.ams.module.auth.repository.UserRepository userRepository;
 
     // Lấy userId thực tế từ username trong JWT
     private Long getCurrentUserId() {

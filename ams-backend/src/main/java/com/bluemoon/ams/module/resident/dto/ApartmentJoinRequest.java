@@ -2,13 +2,9 @@ package com.bluemoon.ams.module.resident.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.time.LocalDate;
 
-@Data
 public class ApartmentJoinRequest {
-
     @NotNull(message = "Vui lòng chọn căn hộ")
     private Long apartmentId;
 
@@ -24,4 +20,19 @@ public class ApartmentJoinRequest {
     private String gender;
 
     private String relationshipType;
+
+    public ApartmentJoinRequest() {}
+
+    public Long getApartmentId() { return apartmentId; }
+    public void setApartmentId(Long apartmentId) { this.apartmentId = apartmentId; }
+    public String getIdentityNumber() { return identityNumber; }
+    public void setIdentityNumber(String identityNumber) { this.identityNumber = identityNumber; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public String getRelationshipType() { return relationshipType; }
+    public void setRelationshipType(String relationshipType) { this.relationshipType = relationshipType; }
 }

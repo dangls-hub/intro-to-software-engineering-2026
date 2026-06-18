@@ -9,8 +9,9 @@ import com.bluemoon.ams.module.resident.entity.Household;
 import com.bluemoon.ams.module.resident.mapper.ResidentMapper;
 import com.bluemoon.ams.module.resident.repository.HouseholdRepository;
 import com.bluemoon.ams.module.resident.service.HouseholdService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,16 +20,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class HouseholdServiceImpl implements HouseholdService {
+
+    private static final Logger log = LoggerFactory.getLogger(HouseholdServiceImpl.class);
+
     /* Chứa nghiệp vụ xử lý của hộ gia đình: tạo, cập nhật, xoá, lấy thông tin, ...
      */
 
-    private final HouseholdRepository householdRepository;
-    private final ApartmentRepository apartmentRepository;
-    private final ResidentMapper residentMapper;
+    @Autowired
+    private HouseholdRepository householdRepository;
+    @Autowired
+    private ApartmentRepository apartmentRepository;
+    @Autowired
+    private ResidentMapper residentMapper;
 
     @Override
     @Transactional(readOnly = true)
