@@ -241,6 +241,14 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
                     "Yêu cầu thanh toán của bạn cho khoản phí " + request.getFee().getName() + " đã bị từ chối.",
                     "/my-fees"
             );
+
+            // Email thông báo từ chối (kèm lý do) cho người gửi nếu có email. Chạy @Async, không ảnh hưởng giao dịch.
+            User submitter = request.getSubmittedBy();
+            String submitterEmail = submitter.getEmail();
+            if (submitterEmail != null && !submitterEmail.isBlank()) {
+                blueMoonEmailService.sendPaymentRejection(
+                        submitterEmail, submitter.getFullName(), request.getFee().getName(), reviewNote);
+            }
         }
 
         return paymentRequestMapper.toResponse(request);

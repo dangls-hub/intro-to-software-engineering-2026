@@ -81,6 +81,24 @@ public class BlueMoonEmailService {
         send(email, "[BlueMoon AMS] Xác nhận thanh toán thành công", content);
     }
 
+    /** 2b. Thông báo yêu cầu thanh toán bị từ chối (kèm lý do nếu có). */
+    @Async("emailExecutor")
+    public void sendPaymentRejection(String email, String name, String feeName, String reason) {
+        String box = kv("Khoản phí", esc(feeName))
+                + kv("Trạng thái", "<span style=\"color:#dc2626;\">Bị từ chối</span>");
+        if (reason != null && !reason.isBlank()) {
+            box += kv("Lý do", esc(reason));
+        }
+        String content = greeting(name, null)
+                + para("Rất tiếc, yêu cầu thanh toán của bạn <b>chưa được duyệt</b>.")
+                + highlightBox(box)
+                + para("Vui lòng kiểm tra lại thông tin/biên lai chuyển khoản và gửi lại yêu cầu. "
+                        + "Nếu cần hỗ trợ, hãy liên hệ Ban quản lý.")
+                + goldButton("XEM & GỬI LẠI", PAYMENTS_URL);
+
+        send(email, "[BlueMoon AMS] Yêu cầu thanh toán bị từ chối", content);
+    }
+
     /** 3. Nhắc nhở nhẹ nhàng khoản phí còn nợ. */
     @Async("emailExecutor")
     public void sendDebtReminder(String email, String name, String apartmentNo, BigDecimal debtAmount) {
@@ -112,6 +130,20 @@ public class BlueMoonEmailService {
                 + para("Mọi thắc mắc xin liên hệ Ban quản lý để được giải đáp. Xin cảm ơn sự thấu hiểu của Quý cư dân.");
 
         send(email, "[BlueMoon AMS] Thông báo thay đổi giá dịch vụ " + serviceName, content);
+    }
+
+    /** Thông báo chung từ Bảng tin — gửi cho toàn thể cư dân (đồng bộ với mục Bảng tin). */
+    @Async("emailExecutor")
+    public void sendAnnouncement(String email, String name, String title, String content) {
+        String body = greeting(name, null)
+                + para("Ban quản lý chung cư BlueMoon vừa đăng một thông báo mới trên bảng tin:")
+                + highlightBox(
+                        "<div style=\"font-size:17px; font-weight:bold; color:" + TEAL + "; margin-bottom:10px;\">" + esc(title) + "</div>"
+                        + "<div style=\"color:" + TEXT + "; font-size:15px; line-height:1.7; white-space:pre-line;\">" + esc(content) + "</div>")
+                + para("Vui lòng đăng nhập cổng thông tin cư dân để xem chi tiết.")
+                + goldButton("XEM BẢNG TIN", "http://localhost:5173/announcements");
+
+        send(email, "[BlueMoon AMS] " + title, body);
     }
 
     /* ═══════════════════════════════════════════════════════════════
