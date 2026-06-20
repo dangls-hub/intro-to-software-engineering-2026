@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MessageCircle, X, Send, User, Paperclip } from 'lucide-react';
+import { MessageCircle, X, Send, User, Paperclip, FileText, FileArchive, FileCode, File, Download } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../../../store/authStore';
 import { getAuthToken } from '../../../lib/apiClient';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   
@@ -49,6 +50,17 @@ export default function ChatWidget() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length, isOpen]);
+
+  // Close lightbox on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setLightboxUrl(null);
+    };
+    if (lightboxUrl) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxUrl]);
 
   // Click outside to close
   useEffect(() => {
@@ -129,26 +141,26 @@ export default function ChatWidget() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Determine type
+    // Determine message type
     const isVideo = file.type.startsWith('video/');
     const isImage = file.type.startsWith('image/');
-    if (!isVideo && !isImage) {
-      alert("Chỉ hỗ trợ tải lên tệp ảnh hoặc video!");
+    const type = isVideo ? 'VIDEO' : isImage ? 'IMAGE' : 'FILE';
+
+    // File size limit: 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Tệp quá lớn! Vui lòng chọn tệp nhỏ hơn 50MB.');
       return;
     }
 
-    const type = isVideo ? 'VIDEO' : 'IMAGE';
     setIsUploading(true);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      // We use fetch directly to upload the file to our new API endpoint
       const response = await fetch('http://localhost:8080/api/chat/upload', {
         method: 'POST',
         headers: {
-          // No Content-Type header so the browser sets it to multipart/form-data with the boundary
           'Authorization': `Bearer ${getAuthToken()}`
         },
         body: formData
@@ -161,17 +173,38 @@ export default function ChatWidget() {
       const data = await response.json();
       const mediaUrl = data.url;
 
-      sendMessage('', type, mediaUrl);
+      // For FILE type, put original filename in content
+      const content = type === 'FILE' ? file.name : '';
+      sendMessage(content, type, mediaUrl);
     } catch (error) {
       console.error('Upload error:', error);
       alert('Không thể tải tệp lên. Vui lòng thử lại sau.');
     } finally {
       setIsUploading(false);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const getFileIcon = (filename) => {
+    if (!filename) return <File size={28} />;
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (['pdf'].includes(ext)) return <FileText size={28} style={{ color: '#ef4444' }} />;
+    if (['doc', 'docx'].includes(ext)) return <FileText size={28} style={{ color: '#3b82f6' }} />;
+    if (['xls', 'xlsx'].includes(ext)) return <FileText size={28} style={{ color: '#22c55e' }} />;
+    if (['ppt', 'pptx'].includes(ext)) return <FileText size={28} style={{ color: '#f97316' }} />;
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return <FileArchive size={28} style={{ color: '#a855f7' }} />;
+    if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'go', 'rs'].includes(ext)) return <FileCode size={28} style={{ color: '#06b6d4' }} />;
+    if (['exe', 'msi', 'dmg', 'apk'].includes(ext)) return <FileCode size={28} style={{ color: '#f59e0b' }} />;
+    return <File size={28} style={{ color: 'var(--text-muted)' }} />;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const getRoleColor = (role) => {
@@ -190,6 +223,36 @@ export default function ChatWidget() {
     if (!isoString) return '';
     const d = new Date(isoString);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Detect URLs in text and render as clickable links
+  const renderTextWithLinks = (text) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (urlRegex.test(part)) {
+        urlRegex.lastIndex = 0; // reset after test()
+        return (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{
+              color: 'inherit',
+              textDecoration: 'underline',
+              opacity: 0.85,
+              wordBreak: 'break-all'
+            }}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
   };
 
   // Only show for logged in users
@@ -278,12 +341,14 @@ export default function ChatWidget() {
                           <img 
                             src={`http://localhost:8080${msg.mediaUrl}`} 
                             alt="chat media" 
+                            onClick={() => setLightboxUrl(`http://localhost:8080${msg.mediaUrl}`)}
                             style={{ 
                               maxWidth: '100%', 
                               maxHeight: '250px', 
                               objectFit: 'cover',
                               borderRadius: msg.content ? '16px 16px 0 0' : '16px',
-                              display: 'block'
+                              display: 'block',
+                              cursor: 'zoom-in'
                             }} 
                           />
                         )}
@@ -299,9 +364,42 @@ export default function ChatWidget() {
                             }} 
                           />
                         )}
-                        {msg.content && (
+                        {msg.type === 'FILE' && msg.mediaUrl && (
+                          <a
+                            href={`http://localhost:8080${msg.mediaUrl}`}
+                            download={msg.content || 'file'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '10px 14px',
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              borderRadius: '12px',
+                              backgroundColor: isMe ? 'rgba(0,0,0,0.12)' : 'rgba(128,128,128,0.1)',
+                              transition: 'background 0.2s',
+                              minWidth: '180px',
+                              maxWidth: '220px'
+                            }}
+                          >
+                            <div style={{ flexShrink: 0 }}>{getFileIcon(msg.content)}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {msg.content || 'Tệp đính kèm'}
+                              </div>
+                              <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '2px' }}>
+                                {msg.content?.split('.').pop()?.toUpperCase() || 'FILE'} • Nhấn để tải
+                              </div>
+                            </div>
+                            <Download size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
+                          </a>
+                        )}
+                        {msg.type !== 'FILE' && msg.content && (
                           <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
-                            {msg.content}
+                            {renderTextWithLinks(msg.content)}
                           </div>
                         )}
                       </div>
@@ -324,7 +422,6 @@ export default function ChatWidget() {
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleFileUpload} 
-                accept="image/*,video/*" 
                 style={{ display: 'none' }} 
               />
               <button
@@ -332,7 +429,7 @@ export default function ChatWidget() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isConnected || isUploading}
                 style={{ padding: '10px', borderRadius: '50%', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: (!isConnected || isUploading) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                title="Đính kèm ảnh/video"
+                title="Đính kèm tệp (ảnh, video, PDF, Word...)"
               >
                 <Paperclip size={22} />
               </button>
@@ -371,6 +468,68 @@ export default function ChatWidget() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox Overlay */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out',
+            animation: 'fadeIn 0.18s ease'
+          }}
+        >
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+            @keyframes imgPop { from { opacity: 0; transform: scale(0.88); } to { opacity: 1; transform: scale(1); } }
+          `}</style>
+          <button
+            onClick={() => setLightboxUrl(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '24px',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '22px',
+              cursor: 'pointer',
+              backdropFilter: 'blur(4px)',
+              transition: 'background 0.2s'
+            }}
+            title="Đóng"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Xem ảnh"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              objectFit: 'contain',
+              borderRadius: '12px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+              animation: 'imgPop 0.2s ease',
+              cursor: 'default'
+            }}
+          />
         </div>
       )}
 
