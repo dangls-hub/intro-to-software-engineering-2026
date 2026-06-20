@@ -61,11 +61,11 @@ export async function fetchMyApartmentRequest() {
   return unwrapData(await apiClient('/residents/me/apartment-request'));
 }
 
-export async function requestApartmentJoin(request) {
+export async function requestApartmentJoin(formData) {
   return unwrapData(
     await apiClient('/residents/me/apartment-request', {
       method: 'POST',
-      body: request,
+      body: formData,
     }),
   );
 }

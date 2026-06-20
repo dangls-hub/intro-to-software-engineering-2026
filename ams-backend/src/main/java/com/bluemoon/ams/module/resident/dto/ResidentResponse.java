@@ -24,6 +24,8 @@ public class ResidentResponse {
     private String approvedByName;
     private LocalDateTime approvedAt;
     private String rejectReason;
+    private String cccdFrontImage;
+    private String cccdBackImage;
 
     public ResidentResponse() {}
 
@@ -67,4 +69,9 @@ public class ResidentResponse {
     public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
     public String getRejectReason() { return rejectReason; }
     public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
+    public String getCccdFrontImage() { return cccdFrontImage; }
+    public void setCccdFrontImage(String cccdFrontImage) { this.cccdFrontImage = cccdFrontImage; }
+    public String getCccdBackImage() { return cccdBackImage; }
+    public void setCccdBackImage(String cccdBackImage) { this.cccdBackImage = cccdBackImage; }
+
 }

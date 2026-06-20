@@ -51,6 +51,12 @@ public class Resident {
     @Column(name = "reject_reason", length = 500)
     private String rejectReason;
 
+    @Column(name = "cccd_front_image", length = 500)
+    private String cccdFrontImage;
+
+    @Column(name = "cccd_back_image", length = 500)
+    private String cccdBackImage;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -133,6 +139,10 @@ public class Resident {
     public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
     public String getRejectReason() { return rejectReason; }
     public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
+    public String getCccdFrontImage() { return cccdFrontImage; }
+    public void setCccdFrontImage(String cccdFrontImage) { this.cccdFrontImage = cccdFrontImage; }
+    public String getCccdBackImage() { return cccdBackImage; }
+    public void setCccdBackImage(String cccdBackImage) { this.cccdBackImage = cccdBackImage; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public Household getHousehold() { return household; }
