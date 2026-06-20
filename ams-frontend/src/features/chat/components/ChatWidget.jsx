@@ -5,6 +5,124 @@ import { useChat } from '../hooks/useChat';
 import { useAuth } from '../../../store/authStore';
 import { getAuthToken } from '../../../lib/apiClient';
 
+// Link preview component and cache
+const linkPreviewCache = {};
+
+function getFirstUrl(text) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const match = text.match(urlRegex);
+  return match ? match[0] : null;
+}
+
+function LinkPreview({ url }) {
+  const [preview, setPreview] = useState(linkPreviewCache[url] || null);
+  const [loading, setLoading] = useState(!linkPreviewCache[url]);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (preview || linkPreviewCache[url]) {
+      return;
+    }
+    
+    let active = true;
+    setLoading(true);
+    setError(false);
+
+    fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (active && data && data.status === 'success' && data.data) {
+          const info = {
+            title: data.data.title,
+            description: data.data.description,
+            imageUrl: data.data.image?.url,
+            logoUrl: data.data.logo?.url,
+            publisher: data.data.publisher || new URL(url).hostname
+          };
+          linkPreviewCache[url] = info;
+          setPreview(info);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching link preview:', err);
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url, preview]);
+
+  if (loading) {
+    return (
+      <div style={{ marginTop: '8px', padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(0,0,0,0.1)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px', width: '240px' }}>
+        <div style={{ width: '40px', height: '40px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px', flexShrink: 0 }}></div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px', width: '80%' }}></div>
+          <div style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px', width: '50%' }}></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !preview) return null;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      style={{
+        marginTop: '8px',
+        display: 'block',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.12)',
+        backgroundColor: 'rgba(0,0,0,0.15)',
+        textDecoration: 'none',
+        color: 'inherit',
+        maxWidth: '240px',
+        transition: 'background 0.2s'
+      }}
+      className="hover:bg-black/20"
+    >
+      {preview.imageUrl && (
+        <img
+          src={preview.imageUrl}
+          alt={preview.title}
+          style={{ width: '100%', height: '100px', objectFit: 'cover', borderBottom: '1px solid rgba(255,255,255,0.12)' }}
+        />
+      )}
+      <div style={{ padding: '6px 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+          {preview.logoUrl && (
+            <img src={preview.logoUrl} alt="" style={{ width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0 }} />
+          )}
+          <span style={{ fontSize: '9px', opacity: 0.65, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {preview.publisher}
+          </span>
+        </div>
+        <div style={{ fontSize: '11px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', marginBottom: '2px', lineHeight: '1.2' }}>
+          {preview.title}
+        </div>
+        {preview.description && (
+          <div style={{ fontSize: '9px', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.3' }}>
+            {preview.description}
+          </div>
+        )}
+      </div>
+    </a>
+  );
+}
+
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
@@ -18,13 +136,41 @@ export default function ChatWidget() {
   const [systemUsers, setSystemUsers] = useState([]);
   const [initialHistoryLength, setInitialHistoryLength] = useState(null);
   const [lastViewedLength, setLastViewedLength] = useState(0);
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [activeEmojiMessageId, setActiveEmojiMessageId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const chatWindowRef = useRef(null);
   const fileInputRef = useRef(null);
+  const emojiTimeoutRef = useRef(null);
   
-  const { messages, sendMessage, isConnected, isHistoryLoaded } = useChat();
+  const { messages, sendMessage, sendReaction, isConnected, isHistoryLoaded } = useChat();
   const { user } = useAuth();
+
+  const handleEmojiMouseEnter = (msgId) => {
+    if (emojiTimeoutRef.current) {
+      clearTimeout(emojiTimeoutRef.current);
+      emojiTimeoutRef.current = null;
+    }
+    setActiveEmojiMessageId(msgId);
+  };
+
+  const handleEmojiMouseLeave = () => {
+    if (emojiTimeoutRef.current) {
+      clearTimeout(emojiTimeoutRef.current);
+    }
+    emojiTimeoutRef.current = setTimeout(() => {
+      setActiveEmojiMessageId(null);
+    }, 250); // 250ms is perfect for quick mouse travel
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (emojiTimeoutRef.current) clearTimeout(emojiTimeoutRef.current);
+    };
+  }, []);
 
   // Record history length when first loaded
   useEffect(() => {
@@ -97,8 +243,16 @@ export default function ChatWidget() {
   const handleSend = (e) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      sendMessage(inputValue.trim(), 'TEXT', null);
+      sendMessage(
+        inputValue.trim(),
+        'TEXT',
+        null,
+        replyingTo?.id,
+        replyingTo ? (replyingTo.type === 'IMAGE' ? '[Hình ảnh]' : replyingTo.type === 'VIDEO' ? '[Video]' : replyingTo.type === 'FILE' ? `[Tệp] ${replyingTo.content}` : replyingTo.content) : null,
+        replyingTo?.senderName
+      );
       setInputValue('');
+      setReplyingTo(null);
       setShowMentions(false);
     }
   };
@@ -298,7 +452,7 @@ export default function ChatWidget() {
             </div>
 
             {/* Messages Area */}
-            <div className="ams-chat-messages" style={{ position: 'absolute', top: '60px', bottom: '80px', left: 0, right: 0, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px', zIndex: 10, backgroundColor: 'transparent' }}>
+            <div className="ams-chat-messages" style={{ position: 'absolute', top: '60px', bottom: replyingTo ? '120px' : '80px', left: 0, right: 0, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px', zIndex: 10, backgroundColor: 'transparent' }}>
               {messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', marginTop: '40px' }}>
                   Chưa có tin nhắn nào. Hãy là người đầu tiên!
@@ -308,9 +462,24 @@ export default function ChatWidget() {
                   const isMe = msg.senderName === user.username;
                   const isFirstInGroup = idx === 0 || messages[idx - 1].senderName !== msg.senderName;
                   const isLastInGroup = idx === messages.length - 1 || messages[idx + 1].senderName !== msg.senderName;
+                  const isWide = msg.type === 'IMAGE' || msg.type === 'VIDEO' || msg.type === 'FILE' || (msg.content && msg.content.length > 12);
                   
                   return (
-                    <div key={msg.id || idx} style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, alignItems: isMe ? 'flex-end' : 'flex-start', marginTop: isFirstInGroup && idx > 0 ? '12px' : '0px' }}>
+                    <div 
+                      key={msg.id || idx} 
+                      id={`msg-${msg.id}`}
+                      onMouseEnter={() => setHoveredMessageId(msg.id)}
+                      onMouseLeave={() => setHoveredMessageId(null)}
+                      style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        flexShrink: 0, 
+                        alignItems: isMe ? 'flex-end' : 'flex-start', 
+                        marginTop: isFirstInGroup && idx > 0 ? '12px' : '0px',
+                        position: 'relative',
+                        width: '100%' 
+                      }}
+                    >
                       {!isMe && isFirstInGroup && (
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2px', marginLeft: '2px' }}>
                           <span className={getRoleColor(msg.senderRole)} style={{ fontSize: '12px' }}>
@@ -319,90 +488,341 @@ export default function ChatWidget() {
                           {getRoleBadge(msg.senderRole)}
                         </div>
                       )}
-                      <div
-                        style={{
-                          padding: msg.type !== 'TEXT' && !msg.content ? '0' : '7px 12px',
-                          fontSize: '14px',
-                          lineHeight: 1.3,
-                          maxWidth: '85%',
-                          wordBreak: 'break-word',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                          backgroundColor: isMe ? 'var(--accent)' : 'var(--bg-card-solid)',
-                          color: isMe ? '#0b1f28' : 'var(--text-primary)',
-                          border: isMe ? 'none' : '1px solid var(--border)',
-                          borderRadius: isMe
-                            ? `18px ${isFirstInGroup ? '18px' : '4px'} ${isLastInGroup ? '18px' : '4px'} 18px`
-                            : `${isFirstInGroup ? '18px' : '4px'} 18px 18px ${isLastInGroup ? '18px' : '4px'}`,
-                          fontWeight: isMe ? 500 : 400,
-                          overflow: 'hidden'
-                        }}
-                      >
-                        {msg.type === 'IMAGE' && msg.mediaUrl && (
-                          <img 
-                            src={`http://localhost:8080${msg.mediaUrl}`} 
-                            alt="chat media" 
-                            onClick={() => setLightboxUrl(`http://localhost:8080${msg.mediaUrl}`)}
-                            style={{ 
-                              maxWidth: '100%', 
-                              maxHeight: '250px', 
-                              objectFit: 'cover',
-                              borderRadius: msg.content ? '16px 16px 0 0' : '16px',
-                              display: 'block',
-                              cursor: 'zoom-in'
-                            }} 
-                          />
+                      
+                      {/* Bubble + Hover actions row */}
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'row', 
+                        alignItems: 'center', 
+                        justifyContent: isMe ? 'flex-end' : 'flex-start',
+                        width: '100%',
+                        position: 'relative',
+                        gap: '6px'
+                      }}>
+                        {/* Actions for current user (appears to the left of their own bubble) */}
+                        {isMe && hoveredMessageId === msg.id && msg.id && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            backgroundColor: 'var(--bg-card-solid)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '16px',
+                            padding: '2px 6px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                            zIndex: 15
+                          }}>
+                            {/* Reaction trigger */}
+                            <div 
+                              style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                              onMouseEnter={() => handleEmojiMouseEnter(msg.id)}
+                              onMouseLeave={handleEmojiMouseLeave}
+                            >
+                              <button
+                                type="button"
+                                style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', fontSize: '14px', filter: 'grayscale(0.3)' }}
+                                className="hover:scale-125 transition-transform"
+                                title="Bày tỏ cảm xúc"
+                              >
+                                😊
+                              </button>
+                              {activeEmojiMessageId === msg.id && (
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: '26px',
+                                  left: isWide ? '-10px' : 'auto',
+                                  right: isWide ? 'auto' : '-10px',
+                                  display: 'flex',
+                                  gap: '6px',
+                                  backgroundColor: 'var(--bg-card-solid)',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: '20px',
+                                  padding: '4px 8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                  zIndex: 25,
+                                  animation: 'fadeIn 0.1s ease-out'
+                                }}>
+                                  {['👍', '❤️', '😂', '😮', '😢', '👎'].map(emoji => (
+                                    <button
+                                      key={emoji}
+                                      type="button"
+                                      onClick={() => {
+                                        sendReaction(msg.id, emoji);
+                                        setActiveEmojiMessageId(null);
+                                      }}
+                                      style={{ fontSize: '16px', background: 'none', border: 'none', padding: '1px', cursor: 'pointer' }}
+                                      className="hover:scale-130 active:scale-95 transition-transform"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {/* Reply button */}
+                            <button
+                              type="button"
+                              onClick={() => setReplyingTo(msg)}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
+                              className="hover:text-sky-400"
+                              title="Trả lời"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 17 4 12 9 7"></polyline>
+                                <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                              </svg>
+                            </button>
+                          </div>
                         )}
-                        {msg.type === 'VIDEO' && msg.mediaUrl && (
-                          <video 
-                            src={`http://localhost:8080${msg.mediaUrl}`} 
-                            controls
-                            style={{ 
-                              maxWidth: '100%', 
-                              maxHeight: '250px',
-                              borderRadius: msg.content ? '16px 16px 0 0' : '16px',
-                              display: 'block'
-                            }} 
-                          />
-                        )}
-                        {msg.type === 'FILE' && msg.mediaUrl && (
-                          <a
-                            href={`http://localhost:8080${msg.mediaUrl}`}
-                            download={msg.content || 'file'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              padding: '10px 14px',
-                              textDecoration: 'none',
-                              color: 'inherit',
-                              borderRadius: '12px',
-                              backgroundColor: isMe ? 'rgba(0,0,0,0.12)' : 'rgba(128,128,128,0.1)',
-                              transition: 'background 0.2s',
-                              minWidth: '180px',
-                              maxWidth: '220px'
-                            }}
-                          >
-                            <div style={{ flexShrink: 0 }}>{getFileIcon(msg.content)}</div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {msg.content || 'Tệp đính kèm'}
+
+                        <div
+                          style={{
+                            padding: msg.type !== 'TEXT' && !msg.content ? '0' : '7px 12px',
+                            fontSize: '14px',
+                            lineHeight: 1.3,
+                            maxWidth: '80%',
+                            wordBreak: 'break-word',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            backgroundColor: isMe ? 'var(--accent)' : 'var(--bg-card-solid)',
+                            color: isMe ? '#0b1f28' : 'var(--text-primary)',
+                            border: isMe ? 'none' : '1px solid var(--border)',
+                            borderRadius: isMe
+                              ? `18px ${isFirstInGroup ? '18px' : '4px'} ${isLastInGroup ? '18px' : '4px'} 18px`
+                              : `${isFirstInGroup ? '18px' : '4px'} 18px 18px ${isLastInGroup ? '18px' : '4px'}`,
+                            fontWeight: isMe ? 500 : 400,
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {/* Referenced Quote Block */}
+                          {msg.replyToId && (
+                            <div 
+                              onClick={() => {
+                                const refEl = document.getElementById(`msg-${msg.replyToId}`);
+                                if (refEl) {
+                                  refEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  const originalBg = refEl.style.backgroundColor;
+                                  refEl.style.backgroundColor = 'rgba(14, 165, 233, 0.25)';
+                                  setTimeout(() => {
+                                    refEl.style.backgroundColor = originalBg;
+                                  }, 1200);
+                                }
+                              }}
+                              style={{
+                                fontSize: '11px',
+                                opacity: 0.85,
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                backgroundColor: isMe ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)',
+                                borderLeft: `3px solid ${isMe ? '#0b1f28' : 'var(--accent)'}`,
+                                marginBottom: '6px',
+                                cursor: 'pointer',
+                                display: 'block',
+                                borderTop: 'none',
+                                borderRight: 'none',
+                                borderBottom: 'none'
+                              }}
+                            >
+                              <div style={{ fontWeight: 700, fontSize: '10px', marginBottom: '1px' }}>
+                                {msg.replyToSender}
                               </div>
-                              <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '2px' }}>
-                                {msg.content?.split('.').pop()?.toUpperCase() || 'FILE'} • Nhấn để tải
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                                {msg.replyToContent}
                               </div>
                             </div>
-                            <Download size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
-                          </a>
-                        )}
-                        {msg.type !== 'FILE' && msg.content && (
-                          <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
-                            {renderTextWithLinks(msg.content)}
+                          )}
+
+                          {msg.type === 'IMAGE' && msg.mediaUrl && (
+                            <img 
+                              src={`http://localhost:8080${msg.mediaUrl}`} 
+                              alt="chat media" 
+                              onClick={() => setLightboxUrl(`http://localhost:8080${msg.mediaUrl}`)}
+                              style={{ 
+                                maxWidth: '100%', 
+                                maxHeight: '250px', 
+                                objectFit: 'cover',
+                                borderRadius: msg.content ? '16px 16px 0 0' : '16px',
+                                display: 'block',
+                                cursor: 'zoom-in'
+                              }} 
+                            />
+                          )}
+                          {msg.type === 'VIDEO' && msg.mediaUrl && (
+                            <video 
+                              src={`http://localhost:8080${msg.mediaUrl}`} 
+                              controls
+                              style={{ 
+                                maxWidth: '100%', 
+                                maxHeight: '250px',
+                                borderRadius: msg.content ? '16px 16px 0 0' : '16px',
+                                display: 'block'
+                              }} 
+                            />
+                          )}
+                          {msg.type === 'FILE' && msg.mediaUrl && (
+                            <a
+                              href={`http://localhost:8080${msg.mediaUrl}`}
+                              download={msg.content || 'file'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '10px 14px',
+                                textDecoration: 'none',
+                                color: 'inherit',
+                                borderRadius: '12px',
+                                backgroundColor: isMe ? 'rgba(0,0,0,0.12)' : 'rgba(128,128,128,0.1)',
+                                transition: 'background 0.2s',
+                                minWidth: '180px',
+                                maxWidth: '220px'
+                              }}
+                            >
+                              <div style={{ flexShrink: 0 }}>{getFileIcon(msg.content)}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {msg.content || 'Tệp đính kèm'}
+                                </div>
+                                <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '2px' }}>
+                                  {msg.content?.split('.').pop()?.toUpperCase() || 'FILE'} • Nhấn để tải
+                                </div>
+                              </div>
+                              <Download size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
+                            </a>
+                          )}
+                          {msg.type !== 'FILE' && msg.content && (
+                            <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
+                              {renderTextWithLinks(msg.content)}
+                              {msg.type === 'TEXT' && getFirstUrl(msg.content) && (
+                                <LinkPreview url={getFirstUrl(msg.content)} />
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions for other users (appears to the right of their bubble) */}
+                        {!isMe && hoveredMessageId === msg.id && msg.id && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            backgroundColor: 'var(--bg-card-solid)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '16px',
+                            padding: '2px 6px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                            zIndex: 15
+                          }}>
+                            {/* Reaction trigger */}
+                            <div 
+                              style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                              onMouseEnter={() => handleEmojiMouseEnter(msg.id)}
+                              onMouseLeave={handleEmojiMouseLeave}
+                            >
+                              <button
+                                type="button"
+                                style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', fontSize: '14px', filter: 'grayscale(0.3)' }}
+                                className="hover:scale-125 transition-transform"
+                                title="Bày tỏ cảm xúc"
+                              >
+                                😊
+                              </button>
+                              {activeEmojiMessageId === msg.id && (
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: '26px',
+                                  left: isWide ? 'auto' : '-10px',
+                                  right: isWide ? '-10px' : 'auto',
+                                  display: 'flex',
+                                  gap: '6px',
+                                  backgroundColor: 'var(--bg-card-solid)',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: '20px',
+                                  padding: '4px 8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                  zIndex: 25,
+                                  animation: 'fadeIn 0.1s ease-out'
+                                }}>
+                                  {['👍', '❤️', '😂', '😮', '😢', '👎'].map(emoji => (
+                                    <button
+                                      key={emoji}
+                                      type="button"
+                                      onClick={() => {
+                                        sendReaction(msg.id, emoji);
+                                        setActiveEmojiMessageId(null);
+                                      }}
+                                      style={{ fontSize: '16px', background: 'none', border: 'none', padding: '1px', cursor: 'pointer' }}
+                                      className="hover:scale-130 active:scale-95 transition-transform"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {/* Reply button */}
+                            <button
+                              type="button"
+                              onClick={() => setReplyingTo(msg)}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
+                              className="hover:text-sky-400"
+                              title="Trả lời"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 17 4 12 9 7"></polyline>
+                                <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                              </svg>
+                            </button>
                           </div>
                         )}
                       </div>
+
+                      {/* Reaction Badges */}
+                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '4px',
+                          marginTop: '4px',
+                          marginBottom: '2px',
+                          alignSelf: isMe ? 'flex-end' : 'flex-start',
+                          paddingLeft: isMe ? '0' : '8px',
+                          paddingRight: isMe ? '8px' : '0'
+                        }}>
+                          {Object.entries(msg.reactions).map(([emoji, users]) => {
+                            if (!users || users.length === 0) return null;
+                            const hasReacted = users.includes(user.username);
+                            return (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => sendReaction(msg.id, emoji)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  backgroundColor: hasReacted ? 'rgba(14, 165, 233, 0.15)' : 'rgba(0,0,0,0.1)',
+                                  border: hasReacted ? '1px solid rgba(14, 165, 233, 0.35)' : '1px solid var(--border)',
+                                  borderRadius: '10px',
+                                  padding: '1px 5px',
+                                  fontSize: '10px',
+                                  cursor: 'pointer',
+                                  color: 'var(--text-primary)',
+                                  transition: 'transform 0.1s ease',
+                                  outline: 'none'
+                                }}
+                                className="hover:scale-105 active:scale-95"
+                                title={users.join(', ')}
+                              >
+                                <span>{emoji}</span>
+                                <span style={{ fontWeight: 600 }}>{users.length}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       {(!messages[idx + 1] || messages[idx + 1].senderName !== msg.senderName || formatTime(messages[idx + 1].timestamp) !== formatTime(msg.timestamp)) && (
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', marginLeft: isMe ? 0 : '4px', marginRight: isMe ? '4px' : 0 }}>
                           {formatTime(msg.timestamp)}
@@ -416,56 +836,88 @@ export default function ChatWidget() {
             </div>
 
             {/* Input Area */}
-            <form onSubmit={handleSend} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 20, backgroundColor: 'var(--bg-card-solid)', borderTop: '1px solid var(--border)' }}>
+            <form onSubmit={handleSend} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: replyingTo ? '120px' : '80px', padding: '8px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 20, backgroundColor: 'var(--bg-card-solid)', borderTop: '1px solid var(--border)' }}>
               
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileUpload} 
-                style={{ display: 'none' }} 
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!isConnected || isUploading}
-                style={{ padding: '10px', borderRadius: '50%', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: (!isConnected || isUploading) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                title="Đính kèm tệp (ảnh, video, PDF, Word...)"
-              >
-                <Paperclip size={22} />
-              </button>
-
-              <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                {showMentions && filteredMentionUsers.length > 0 && (
-                  <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px', backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', zIndex: 30, minWidth: '200px', maxHeight: '150px', overflowY: 'auto' }}>
-                    {filteredMentionUsers.map(u => (
-                      <div 
-                        key={u} 
-                        onClick={() => insertMention(u)}
-                        style={{ padding: '8px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}
-                        className="hover:bg-slate-800"
-                      >
-                        <User size={16} />
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{u}</span>
-                      </div>
-                    ))}
+              {replyingTo && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '4px 10px',
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  borderRadius: '6px',
+                  marginBottom: '6px',
+                  borderLeft: '3px solid var(--accent)'
+                }}>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                      Trả lời {replyingTo.senderName}:
+                    </span>{' '}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '200px', verticalAlign: 'bottom' }}>
+                      {replyingTo.type === 'IMAGE' ? '[Hình ảnh]' : replyingTo.type === 'VIDEO' ? '[Video]' : replyingTo.type === 'FILE' ? `[Tệp] ${replyingTo.content}` : replyingTo.content}
+                    </span>
                   </div>
-                )}
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  placeholder={isUploading ? "Đang tải tệp lên..." : (isConnected ? "Nhập tin nhắn..." : "Đang kết nối...")}
-                  disabled={!isConnected || isUploading}
-                  style={{ width: '100%', padding: '12px 16px', fontSize: '15px', borderRadius: '9999px', border: '1px solid var(--border-input)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', outline: 'none' }}
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                    className="hover:text-red-400"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  style={{ display: 'none' }} 
                 />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!isConnected || isUploading}
+                  style={{ padding: '10px', borderRadius: '50%', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: (!isConnected || isUploading) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                  title="Đính kèm tệp (ảnh, video, PDF, Word...)"
+                >
+                  <Paperclip size={22} />
+                </button>
+
+                <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+                  {showMentions && filteredMentionUsers.length > 0 && (
+                    <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px', backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', zIndex: 30, minWidth: '200px', maxHeight: '150px', overflowY: 'auto' }}>
+                      {filteredMentionUsers.map(u => (
+                        <div 
+                          key={u} 
+                          onClick={() => insertMention(u)}
+                          style={{ padding: '8px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                          className="hover:bg-slate-800"
+                        >
+                          <User size={16} />
+                          <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{u}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    placeholder={isUploading ? "Đang tải tệp lên..." : (isConnected ? "Nhập tin nhắn..." : "Đang kết nối...")}
+                    disabled={!isConnected || isUploading}
+                    style={{ width: '100%', padding: '10px 16px', fontSize: '14px', borderRadius: '9999px', border: '1px solid var(--border-input)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', outline: 'none' }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!inputValue.trim() || !isConnected || isUploading}
+                  style={{ padding: '10px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--accent)', color: '#0b1f28', cursor: (!inputValue.trim() || !isConnected || isUploading) ? 'not-allowed' : 'pointer', opacity: (!inputValue.trim() || !isConnected || isUploading) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                >
+                  <Send size={18} style={{ marginLeft: '2px' }} />
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || !isConnected || isUploading}
-                style={{ padding: '12px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--accent)', color: '#0b1f28', cursor: (!inputValue.trim() || !isConnected || isUploading) ? 'not-allowed' : 'pointer', opacity: (!inputValue.trim() || !isConnected || isUploading) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-              >
-                <Send size={20} style={{ marginLeft: '4px' }} />
-              </button>
             </form>
           </div>
         </div>

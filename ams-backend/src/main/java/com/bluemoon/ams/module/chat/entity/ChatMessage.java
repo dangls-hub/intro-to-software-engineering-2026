@@ -37,4 +37,13 @@ public class ChatMessage {
 
     @Column(length = 1000)
     private String mediaUrl;
+
+    // Message Reply Reference
+    private Long replyToId;
+
+    @Column(columnDefinition = "TEXT")
+    private String replyToContent;
+
+    private String replyToSender;
 }
+

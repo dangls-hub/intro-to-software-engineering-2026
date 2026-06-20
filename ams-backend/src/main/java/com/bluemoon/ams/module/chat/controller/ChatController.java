@@ -1,6 +1,8 @@
 package com.bluemoon.ams.module.chat.controller;
 
 import com.bluemoon.ams.module.chat.dto.ChatMessageDto;
+import com.bluemoon.ams.module.chat.dto.ChatReactionDto;
+import com.bluemoon.ams.module.chat.dto.ChatReactionResponseDto;
 import com.bluemoon.ams.module.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,13 @@ public class ChatController {
         return chatService.saveMessage(chatMessageDto);
     }
 
+    // Receive emoji reaction from client via WebSocket
+    @MessageMapping("/chat.react")
+    @SendTo("/topic/reactions")
+    public ChatReactionResponseDto reactToMessage(@Payload ChatReactionDto chatReactionDto) {
+        return chatService.addReaction(chatReactionDto);
+    }
+
     // REST endpoint to load chat history
     @GetMapping("/history")
     public ResponseEntity<List<ChatMessageDto>> getChatHistory(@RequestParam(defaultValue = "50") int limit) {
@@ -36,3 +45,4 @@ public class ChatController {
         return ResponseEntity.ok(history);
     }
 }
+

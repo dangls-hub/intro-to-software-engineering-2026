@@ -66,6 +66,22 @@ export function useChat() {
           return [...prevMessages, receivedMessage];
         });
       });
+
+      // Subscribe to emoji reactions
+      stompClient.subscribe('/topic/reactions', (messageOutput) => {
+        const reactionEvent = JSON.parse(messageOutput.body);
+        setMessages((prevMessages) => {
+          return prevMessages.map((msg) => {
+            if (msg.id === reactionEvent.messageId) {
+              return {
+                ...msg,
+                reactions: reactionEvent.reactions
+              };
+            }
+            return msg;
+          });
+        });
+      });
     };
 
     stompClient.onStompError = (frame) => {
@@ -87,7 +103,7 @@ export function useChat() {
     };
   }, [user]);
 
-  const sendMessage = useCallback((content, type = 'TEXT', mediaUrl = null) => {
+  const sendMessage = useCallback((content, type = 'TEXT', mediaUrl = null, replyToId = null, replyToContent = null, replyToSender = null) => {
     if (stompClientRef.current && isConnected && user) {
       const messageDto = {
         content: content,
@@ -95,7 +111,10 @@ export function useChat() {
         senderRole: user.role,
         type: type,
         mediaUrl: mediaUrl,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        replyToId: replyToId,
+        replyToContent: replyToContent,
+        replyToSender: replyToSender
       };
       
       stompClientRef.current.publish({
@@ -105,5 +124,21 @@ export function useChat() {
     }
   }, [isConnected, user]);
 
-  return { messages, sendMessage, isConnected, isHistoryLoaded };
+  const sendReaction = useCallback((messageId, emoji) => {
+    if (stompClientRef.current && isConnected && user) {
+      const reactionDto = {
+        messageId: messageId,
+        username: user.username,
+        emoji: emoji
+      };
+      
+      stompClientRef.current.publish({
+        destination: '/app/chat.react',
+        body: JSON.stringify(reactionDto)
+      });
+    }
+  }, [isConnected, user]);
+
+  return { messages, sendMessage, sendReaction, isConnected, isHistoryLoaded };
 }
+
