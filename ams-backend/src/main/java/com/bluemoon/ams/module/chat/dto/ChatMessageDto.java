@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -19,4 +21,13 @@ public class ChatMessageDto {
     private LocalDateTime timestamp;
     private String type = "TEXT";
     private String mediaUrl;
+    
+    // Emoji Reactions: emoji -> list of usernames
+    private Map<String, List<String>> reactions;
+
+    // Message Reply Reference
+    private Long replyToId;
+    private String replyToContent;
+    private String replyToSender;
 }
+
