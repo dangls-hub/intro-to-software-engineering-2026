@@ -225,6 +225,36 @@ export default function ChatWidget() {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Detect URLs in text and render as clickable links
+  const renderTextWithLinks = (text) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (urlRegex.test(part)) {
+        urlRegex.lastIndex = 0; // reset after test()
+        return (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{
+              color: 'inherit',
+              textDecoration: 'underline',
+              opacity: 0.85,
+              wordBreak: 'break-all'
+            }}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   // Only show for logged in users
   if (!user) return null;
 
@@ -369,7 +399,7 @@ export default function ChatWidget() {
                         )}
                         {msg.type !== 'FILE' && msg.content && (
                           <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
-                            {msg.content}
+                            {renderTextWithLinks(msg.content)}
                           </div>
                         )}
                       </div>
