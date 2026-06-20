@@ -137,7 +137,7 @@ function ApartmentsPage() {
   const filtered = apartments.filter(
     (a) =>
       (a.roomNumber || '').toLowerCase().includes(search.toLowerCase()) ||
-      (a.floor || '').toLowerCase().includes(search.toLowerCase())
+      String(a.floor || '').toLowerCase().includes(search.toLowerCase())
   );
   /* ── End preserved logic ─────────────────────────── */
 

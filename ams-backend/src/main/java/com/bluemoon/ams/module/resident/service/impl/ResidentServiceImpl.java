@@ -21,6 +21,7 @@ import com.bluemoon.ams.module.resident.service.ResidentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -28,8 +29,15 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class ResidentServiceImpl implements ResidentService {
@@ -51,6 +59,9 @@ public class ResidentServiceImpl implements ResidentService {
     private com.bluemoon.ams.module.notification.service.NotificationService notificationService;
     @Autowired
     private com.bluemoon.ams.common.service.BlueMoonEmailService blueMoonEmailService;
+
+    @Value("${app.upload.cccd-dir:uploads/cccd}")
+    private String cccdUploadDir;
 
     @Override
     @Transactional(readOnly = true)
@@ -178,7 +189,16 @@ public class ResidentServiceImpl implements ResidentService {
 
     @Override
     @Transactional
-    public ResidentResponse requestApartmentJoin(String username, ApartmentJoinRequest request) {
+    public ResidentResponse requestApartmentJoin(String username, ApartmentJoinRequest request,
+                                                  MultipartFile cccdFront, MultipartFile cccdBack) {
+        // Validate CCCD images are provided
+        if (cccdFront == null || cccdFront.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng upload ảnh mặt trước CCCD");
+        }
+        if (cccdBack == null || cccdBack.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng upload ảnh mặt sau CCCD");
+        }
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 
@@ -194,6 +214,10 @@ public class ResidentServiceImpl implements ResidentService {
 
         validateIdentityUnique(request.getIdentityNumber(), resident.getId());
 
+        // Save CCCD images
+        String frontImagePath = saveCccdImage(cccdFront, "front");
+        String backImagePath = saveCccdImage(cccdBack, "back");
+
         resident.setUser(user);
         resident.setFullName(user.getFullName());
         resident.setIdentityNumber(blankToNull(request.getIdentityNumber()));
@@ -208,6 +232,8 @@ public class ResidentServiceImpl implements ResidentService {
         resident.setApprovedByUser(null);
         resident.setApprovedAt(null);
         resident.setRejectReason(null);
+        resident.setCccdFrontImage(frontImagePath);
+        resident.setCccdBackImage(backImagePath);
 
         Resident saved = residentRepository.save(resident);
         log.info("Cư dân {} gửi yêu cầu vào căn hộ {}", username, apartment.getRoomNumber());
@@ -400,6 +426,32 @@ public class ResidentServiceImpl implements ResidentService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * Lưu ảnh CCCD vào thư mục uploads/cccd
+     */
+    private String saveCccdImage(MultipartFile file, String side) {
+        try {
+            Path uploadPath = Paths.get(cccdUploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            }
+            String filename = UUID.randomUUID() + "_" + side + extension;
+
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return filePath.toString().replace("\\", "/");
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể lưu ảnh CCCD: " + e.getMessage(), e);
+        }
     }
 
     /**
