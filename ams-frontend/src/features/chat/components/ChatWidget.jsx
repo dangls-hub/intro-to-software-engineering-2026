@@ -7,6 +7,7 @@ import { getAuthToken } from '../../../lib/apiClient';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   
@@ -49,6 +50,17 @@ export default function ChatWidget() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length, isOpen]);
+
+  // Close lightbox on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setLightboxUrl(null);
+    };
+    if (lightboxUrl) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxUrl]);
 
   // Click outside to close
   useEffect(() => {
@@ -278,12 +290,14 @@ export default function ChatWidget() {
                           <img 
                             src={`http://localhost:8080${msg.mediaUrl}`} 
                             alt="chat media" 
+                            onClick={() => setLightboxUrl(`http://localhost:8080${msg.mediaUrl}`)}
                             style={{ 
                               maxWidth: '100%', 
                               maxHeight: '250px', 
                               objectFit: 'cover',
                               borderRadius: msg.content ? '16px 16px 0 0' : '16px',
-                              display: 'block'
+                              display: 'block',
+                              cursor: 'zoom-in'
                             }} 
                           />
                         )}
@@ -371,6 +385,68 @@ export default function ChatWidget() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox Overlay */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out',
+            animation: 'fadeIn 0.18s ease'
+          }}
+        >
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+            @keyframes imgPop { from { opacity: 0; transform: scale(0.88); } to { opacity: 1; transform: scale(1); } }
+          `}</style>
+          <button
+            onClick={() => setLightboxUrl(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '24px',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '22px',
+              cursor: 'pointer',
+              backdropFilter: 'blur(4px)',
+              transition: 'background 0.2s'
+            }}
+            title="Đóng"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Xem ảnh"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              objectFit: 'contain',
+              borderRadius: '12px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+              animation: 'imgPop 0.2s ease',
+              cursor: 'default'
+            }}
+          />
         </div>
       )}
 
