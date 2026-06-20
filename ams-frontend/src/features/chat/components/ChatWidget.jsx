@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MessageCircle, X, Send, User, Paperclip, FileText, FileArchive, FileCode, File, Download } from 'lucide-react';
+import { MessageCircle, X, Send, User, Paperclip, FileText, FileArchive, FileCode, File, Download, Trash2, Pin } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../../../store/authStore';
+import { useTheme } from '../../../store/themeStore';
 import { getAuthToken } from '../../../lib/apiClient';
 
 // Link preview component and cache
@@ -124,6 +125,7 @@ function LinkPreview({ url }) {
 }
 
 export default function ChatWidget() {
+  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [inputValue, setInputValue] = useState('');
@@ -139,14 +141,50 @@ export default function ChatWidget() {
   const [hoveredMessageId, setHoveredMessageId] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const [activeEmojiMessageId, setActiveEmojiMessageId] = useState(null);
+  const [recallModalTarget, setRecallModalTarget] = useState(null);
+  const [recallOption, setRecallOption] = useState('everyone');
+  const [pinModalTarget, setPinModalTarget] = useState(null);
+  const [showPinnedListModal, setShowPinnedListModal] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
 
   const messagesEndRef = useRef(null);
   const chatWindowRef = useRef(null);
   const fileInputRef = useRef(null);
   const emojiTimeoutRef = useRef(null);
   
-  const { messages, sendMessage, sendReaction, isConnected, isHistoryLoaded } = useChat();
+  const { messages, sendMessage, sendReaction, recallMessage, hideMessage, togglePin, isConnected, isHistoryLoaded } = useChat();
   const { user } = useAuth();
+
+  const isDark = theme === 'dark';
+  const modalStyles = {
+    overlayBg: isDark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.4)',
+    cardBg: isDark ? '#242526' : '#ffffff',
+    cardBorder: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+    cardShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.5)' : '0 12px 36px rgba(0, 0, 0, 0.12)',
+    textColor: isDark ? '#e4e6eb' : '#050505',
+    subTextColor: isDark ? '#b0b3b8' : '#65676b',
+    borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+    closeBtnBg: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    closeBtnColor: isDark ? '#b0b3b8' : '#65676b',
+    radioBorderColor: isDark ? '#a8abaf' : '#bcc0c4',
+    footerBg: isDark ? '#242526' : '#ffffff'
+  };
+
+  const openPinnedList = () => {
+    fetch('http://localhost:8080/api/chat/pinned', {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPinnedMessages(data);
+          setShowPinnedListModal(true);
+        }
+      })
+      .catch(err => console.error('Failed to fetch pinned messages', err));
+  };
 
   const handleEmojiMouseEnter = (msgId) => {
     if (emojiTimeoutRef.current) {
@@ -211,6 +249,14 @@ export default function ChatWidget() {
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // If the recall, pin, or pinned list modals are active, do not close the chat window
+      if (
+        document.getElementById('ams-recall-modal') ||
+        document.getElementById('ams-pin-modal') ||
+        document.getElementById('ams-pinned-list-modal')
+      ) {
+        return;
+      }
       if (chatWindowRef.current && !chatWindowRef.current.contains(event.target)) {
         setIsOpen(false);
       }
@@ -446,9 +492,20 @@ export default function ChatWidget() {
                 <h3 style={{ fontWeight: 600, fontSize: '16px', margin: 0 }}>Cộng đồng BlueMoon</h3>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: isConnected ? '#34d399' : '#f87171', marginLeft: '8px' }} className="animate-pulse" title={isConnected ? 'Đã kết nối' : 'Đang kết nối...'}></div>
               </div>
-              <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}>
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  type="button"
+                  onClick={openPinnedList} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '6px', borderRadius: '50%', alignItems: 'center', justifyContent: 'center' }}
+                  className="hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  title="Tin nhắn đã ghim"
+                >
+                  <Pin size={18} />
+                </button>
+                <button type="button" onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '6px', borderRadius: '50%', alignItems: 'center', justifyContent: 'center' }} className="hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Messages Area */}
@@ -459,10 +516,74 @@ export default function ChatWidget() {
                 </div>
               ) : (
                 messages.map((msg, idx) => {
+                  if (msg.type === 'SYSTEM') {
+                    const isPin = msg.content.includes(' đã ghim một tin nhắn.');
+                    const pinner = isPin 
+                      ? msg.content.split(' đã ghim một tin nhắn.')[0] 
+                      : msg.content.split(' đã bỏ ghim một tin nhắn.')[0];
+                    const displayName = pinner === user.username ? 'Bạn' : pinner;
+                    
+                    return (
+                      <div 
+                        key={msg.id || idx}
+                        style={{ 
+                          display: 'flex', 
+                          justifyContent: 'center', 
+                          width: '100%', 
+                          margin: '8px 0',
+                          padding: '0 16px',
+                          boxSizing: 'border-box',
+                          flexShrink: 0
+                        }}
+                      >
+                        <div style={{ 
+                          fontSize: '12px', 
+                          color: 'var(--text-secondary)', 
+                          textAlign: 'center',
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                          padding: '6px 14px',
+                          borderRadius: '16px',
+                          border: '1px solid var(--border-subtle)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>{isPin ? '📌' : '📍'}</span>
+                          <span>
+                            {displayName} đã {isPin ? 'ghim' : 'bỏ ghim'} một tin nhắn.
+                            {isPin && (
+                              <>
+                                {' '}
+                                <button
+                                  type="button"
+                                  onClick={openPinnedList}
+                                  style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    padding: 0, 
+                                    color: 'var(--accent)', 
+                                    fontWeight: 600, 
+                                    cursor: 'pointer', 
+                                    textDecoration: 'underline' 
+                                  }}
+                                >
+                                  Xem tất cả
+                                </button>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const isMe = msg.senderName === user.username;
                   const isFirstInGroup = idx === 0 || messages[idx - 1].senderName !== msg.senderName;
                   const isLastInGroup = idx === messages.length - 1 || messages[idx + 1].senderName !== msg.senderName;
                   const isWide = msg.type === 'IMAGE' || msg.type === 'VIDEO' || msg.type === 'FILE' || (msg.content && msg.content.length > 12);
+                  const referencedMsg = msg.replyToId ? messages.find(m => m.id === msg.replyToId) : null;
+                  const isReferencedMsgRecalled = referencedMsg?.recalled;
+                  const displayReplyContent = isReferencedMsgRecalled ? 'Tin nhắn đã bị thu hồi' : msg.replyToContent;
                   
                   return (
                     <div 
@@ -488,6 +609,23 @@ export default function ChatWidget() {
                           {getRoleBadge(msg.senderRole)}
                         </div>
                       )}
+
+                      {msg.pinned && (
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '4px', 
+                          fontSize: '10px', 
+                          color: isDark ? '#f59e0b' : '#d97706', 
+                          marginBottom: '2px',
+                          marginLeft: isMe ? 0 : '12px',
+                          marginRight: isMe ? '12px' : 0,
+                          alignSelf: isMe ? 'flex-end' : 'flex-start'
+                        }}>
+                          <Pin size={10} fill={isDark ? '#f59e0b' : '#d97706'} style={{ transform: 'rotate(45deg)' }} />
+                          <span style={{ fontWeight: 600 }}>Đã ghim</span>
+                        </div>
+                      )}
                       
                       {/* Bubble + Hover actions row */}
                       <div style={{ 
@@ -500,7 +638,7 @@ export default function ChatWidget() {
                         gap: '6px'
                       }}>
                         {/* Actions for current user (appears to the left of their own bubble) */}
-                        {isMe && hoveredMessageId === msg.id && msg.id && (
+                        {isMe && hoveredMessageId === msg.id && msg.id && !msg.recalled && (
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -512,6 +650,35 @@ export default function ChatWidget() {
                             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                             zIndex: 15
                           }}>
+                            {/* Pin / Unpin button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (msg.pinned) {
+                                  togglePin(msg.id);
+                                } else {
+                                  setPinModalTarget(msg);
+                                }
+                              }}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: msg.pinned ? '#eab308' : 'var(--text-muted)' }}
+                              className="hover:scale-110 transition-transform"
+                              title={msg.pinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
+                            >
+                              <Pin size={13} fill={msg.pinned ? "#eab308" : "none"} />
+                            </button>
+                            {/* Recall button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRecallModalTarget(msg);
+                                setRecallOption('everyone');
+                              }}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
+                              className="hover:text-red-500 transition-colors"
+                              title="Thu hồi tin nhắn"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                             {/* Reaction trigger */}
                             <div 
                               style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
@@ -577,19 +744,20 @@ export default function ChatWidget() {
 
                         <div
                           style={{
-                            padding: msg.type !== 'TEXT' && !msg.content ? '0' : '7px 12px',
+                            padding: (msg.type !== 'TEXT' && !msg.content && !msg.recalled) ? '0' : '7px 12px',
                             fontSize: '14px',
                             lineHeight: 1.3,
                             maxWidth: '80%',
                             wordBreak: 'break-word',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            backgroundColor: isMe ? 'var(--accent)' : 'var(--bg-card-solid)',
-                            color: isMe ? '#0b1f28' : 'var(--text-primary)',
-                            border: isMe ? 'none' : '1px solid var(--border)',
+                            backgroundColor: msg.recalled ? 'transparent' : (isMe ? 'var(--accent)' : 'var(--bg-card-solid)'),
+                            color: msg.recalled ? 'var(--text-muted)' : (isMe ? '#0b1f28' : 'var(--text-primary)'),
+                            border: msg.recalled ? '1px dashed var(--border)' : (isMe ? 'none' : '1px solid var(--border)'),
+                            fontStyle: msg.recalled ? 'italic' : 'normal',
                             borderRadius: isMe
                               ? `18px ${isFirstInGroup ? '18px' : '4px'} ${isLastInGroup ? '18px' : '4px'} 18px`
                               : `${isFirstInGroup ? '18px' : '4px'} 18px 18px ${isLastInGroup ? '18px' : '4px'}`,
-                            fontWeight: isMe ? 500 : 400,
+                            fontWeight: msg.recalled ? 400 : (isMe ? 500 : 400),
                             overflow: 'hidden'
                           }}
                         >
@@ -625,84 +793,92 @@ export default function ChatWidget() {
                               <div style={{ fontWeight: 700, fontSize: '10px', marginBottom: '1px' }}>
                                 {msg.replyToSender}
                               </div>
-                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                                {msg.replyToContent}
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', fontStyle: isReferencedMsgRecalled ? 'italic' : 'normal' }}>
+                                {displayReplyContent}
                               </div>
                             </div>
                           )}
 
-                          {msg.type === 'IMAGE' && msg.mediaUrl && (
-                            <img 
-                              src={`http://localhost:8080${msg.mediaUrl}`} 
-                              alt="chat media" 
-                              onClick={() => setLightboxUrl(`http://localhost:8080${msg.mediaUrl}`)}
-                              style={{ 
-                                maxWidth: '100%', 
-                                maxHeight: '250px', 
-                                objectFit: 'cover',
-                                borderRadius: msg.content ? '16px 16px 0 0' : '16px',
-                                display: 'block',
-                                cursor: 'zoom-in'
-                              }} 
-                            />
-                          )}
-                          {msg.type === 'VIDEO' && msg.mediaUrl && (
-                            <video 
-                              src={`http://localhost:8080${msg.mediaUrl}`} 
-                              controls
-                              style={{ 
-                                maxWidth: '100%', 
-                                maxHeight: '250px',
-                                borderRadius: msg.content ? '16px 16px 0 0' : '16px',
-                                display: 'block'
-                              }} 
-                            />
-                          )}
-                          {msg.type === 'FILE' && msg.mediaUrl && (
-                            <a
-                              href={`http://localhost:8080${msg.mediaUrl}`}
-                              download={msg.content || 'file'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={e => e.stopPropagation()}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                padding: '10px 14px',
-                                textDecoration: 'none',
-                                color: 'inherit',
-                                borderRadius: '12px',
-                                backgroundColor: isMe ? 'rgba(0,0,0,0.12)' : 'rgba(128,128,128,0.1)',
-                                transition: 'background 0.2s',
-                                minWidth: '180px',
-                                maxWidth: '220px'
-                              }}
-                            >
-                              <div style={{ flexShrink: 0 }}>{getFileIcon(msg.content)}</div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {msg.content || 'Tệp đính kèm'}
-                                </div>
-                                <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '2px' }}>
-                                  {msg.content?.split('.').pop()?.toUpperCase() || 'FILE'} • Nhấn để tải
-                                </div>
-                              </div>
-                              <Download size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
-                            </a>
-                          )}
-                          {msg.type !== 'FILE' && msg.content && (
-                            <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
-                              {renderTextWithLinks(msg.content)}
-                              {msg.type === 'TEXT' && getFirstUrl(msg.content) && (
-                                <LinkPreview url={getFirstUrl(msg.content)} />
-                              )}
+                          {msg.recalled ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0' }}>
+                              <span>🚫 Tin nhắn đã bị thu hồi</span>
                             </div>
+                          ) : (
+                            <>
+                              {msg.type === 'IMAGE' && msg.mediaUrl && (
+                                <img 
+                                  src={`http://localhost:8080${msg.mediaUrl}`} 
+                                  alt="chat media" 
+                                  onClick={() => setLightboxUrl(`http://localhost:8080${msg.mediaUrl}`)}
+                                  style={{ 
+                                    maxWidth: '100%', 
+                                    maxHeight: '250px', 
+                                    objectFit: 'cover',
+                                    borderRadius: msg.content ? '16px 16px 0 0' : '16px',
+                                    display: 'block',
+                                    cursor: 'zoom-in'
+                                  }} 
+                                />
+                              )}
+                              {msg.type === 'VIDEO' && msg.mediaUrl && (
+                                <video 
+                                  src={`http://localhost:8080${msg.mediaUrl}`} 
+                                  controls
+                                  style={{ 
+                                    maxWidth: '100%', 
+                                    maxHeight: '250px',
+                                    borderRadius: msg.content ? '16px 16px 0 0' : '16px',
+                                    display: 'block'
+                                  }} 
+                                />
+                              )}
+                              {msg.type === 'FILE' && msg.mediaUrl && (
+                                <a
+                                  href={`http://localhost:8080${msg.mediaUrl}`}
+                                  download={msg.content || 'file'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '10px 14px',
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                    borderRadius: '12px',
+                                    backgroundColor: isMe ? 'rgba(0,0,0,0.12)' : 'rgba(128,128,128,0.1)',
+                                    transition: 'background 0.2s',
+                                    minWidth: '180px',
+                                    maxWidth: '220px'
+                                  }}
+                                >
+                                  <div style={{ flexShrink: 0 }}>{getFileIcon(msg.content)}</div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {msg.content || 'Tệp đính kèm'}
+                                    </div>
+                                    <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '2px' }}>
+                                      {msg.content?.split('.').pop()?.toUpperCase() || 'FILE'} • Nhấn để tải
+                                    </div>
+                                  </div>
+                                  <Download size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
+                                </a>
+                              )}
+                              {msg.type !== 'FILE' && msg.content && (
+                                <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
+                                  {renderTextWithLinks(msg.content)}
+                                  {msg.type === 'TEXT' && getFirstUrl(msg.content) && (
+                                    <LinkPreview url={getFirstUrl(msg.content)} />
+                                  )}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
 
                         {/* Actions for other users (appears to the right of their bubble) */}
-                        {!isMe && hoveredMessageId === msg.id && msg.id && (
+                        {!isMe && hoveredMessageId === msg.id && msg.id && !msg.recalled && (
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -714,6 +890,36 @@ export default function ChatWidget() {
                             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                             zIndex: 15
                           }}>
+                            {/* Pin / Unpin button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (msg.pinned) {
+                                  togglePin(msg.id);
+                                } else {
+                                  setPinModalTarget(msg);
+                                }
+                              }}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: msg.pinned ? '#eab308' : 'var(--text-muted)' }}
+                              className="hover:scale-110 transition-transform"
+                              title={msg.pinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
+                            >
+                              <Pin size={13} fill={msg.pinned ? "#eab308" : "none"} />
+                            </button>
+                            {/* Hide button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRecallModalTarget(msg);
+                                setRecallOption('me');
+                              }}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
+                              className="hover:text-red-500 transition-colors"
+                              title="Gỡ ở phía bạn"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+
                             {/* Reaction trigger */}
                             <div 
                               style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
@@ -779,7 +985,7 @@ export default function ChatWidget() {
                       </div>
 
                       {/* Reaction Badges */}
-                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                      {!msg.recalled && msg.reactions && Object.keys(msg.reactions).length > 0 && (
                         <div style={{
                           display: 'flex',
                           flexWrap: 'wrap',
@@ -982,6 +1188,553 @@ export default function ChatWidget() {
               cursor: 'default'
             }}
           />
+        </div>
+      )}
+
+      {/* Custom Recall Confirmation Modal (Full Screen Overlay like Messenger) */}
+      {recallModalTarget && (
+        <div 
+          id="ams-recall-modal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: modalStyles.overlayBg,
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999, // Overlay everything
+            animation: 'fadeIn 0.18s ease'
+          }}
+        >
+          <div style={{
+            width: '540px',
+            maxWidth: '90vw',
+            backgroundColor: modalStyles.cardBg,
+            border: modalStyles.cardBorder,
+            borderRadius: '16px',
+            boxShadow: modalStyles.cardShadow,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            color: modalStyles.textColor,
+            transition: 'background-color 0.2s, color 0.2s, border-color 0.2s'
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px',
+              borderBottom: modalStyles.borderBottom
+            }}>
+              <h4 style={{ fontWeight: 600, fontSize: '20px', margin: 0, color: modalStyles.textColor }}>
+                Bạn muốn thu hồi tin nhắn này ở phía ai?
+              </h4>
+              <button
+                type="button"
+                onClick={() => setRecallModalTarget(null)}
+                style={{ 
+                  background: modalStyles.closeBtnBg, 
+                  border: 'none', 
+                  color: modalStyles.closeBtnColor, 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  width: '36px', 
+                  height: '36px', 
+                  borderRadius: '50%' 
+                }}
+                className={`${isDark ? 'hover:bg-white/20' : 'hover:bg-black/10'} transition-colors`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content / Options */}
+            <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Option 1: everyone */}
+              {recallModalTarget.senderName === user.username && (
+                <label 
+                  className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'} p-2 rounded-lg transition-colors duration-150`}
+                  style={{ display: 'flex', gap: '16px', cursor: 'pointer', alignItems: 'flex-start' }}
+                >
+                  <input
+                    type="radio"
+                    name="recallOption"
+                    checked={recallOption === 'everyone'}
+                    onChange={() => setRecallOption('everyone')}
+                    style={{ display: 'none' }}
+                  />
+                  {/* Custom styled radio button */}
+                  <div style={{ display: 'flex', alignItems: 'center', height: '24px' }}>
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      border: recallOption === 'everyone' ? '2px solid #0084ff' : `2px solid ${modalStyles.radioBorderColor}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: recallOption === 'everyone' ? '#0084ff' : 'transparent',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
+                    }}>
+                      {recallOption === 'everyone' && (
+                        <div style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          backgroundColor: '#ffffff'
+                        }} />
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px', color: modalStyles.textColor }}>
+                      Thu hồi với mọi người
+                    </div>
+                    <div style={{ fontSize: '13px', color: modalStyles.subTextColor, lineHeight: '1.4' }}>
+                      Tin nhắn này sẽ bị thu hồi với mọi người trong đoạn chat. Những người khác có thể đã xem hoặc chuyển tiếp tin nhắn đó. Tin nhắn đã thu hồi vẫn có thể bị báo cáo.
+                    </div>
+                  </div>
+                </label>
+              )}
+
+              {/* Option 2: me */}
+              <label 
+                className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'} p-2 rounded-lg transition-colors duration-150`}
+                style={{ display: 'flex', gap: '16px', cursor: 'pointer', alignItems: 'flex-start' }}
+              >
+                <input
+                  type="radio"
+                  name="recallOption"
+                  checked={recallOption === 'me'}
+                  onChange={() => setRecallOption('me')}
+                  style={{ display: 'none' }}
+                />
+                {/* Custom styled radio button */}
+                <div style={{ display: 'flex', alignItems: 'center', height: '24px' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    border: recallOption === 'me' ? '2px solid #0084ff' : `2px solid ${modalStyles.radioBorderColor}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: recallOption === 'me' ? '#0084ff' : 'transparent',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0
+                  }}>
+                    {recallOption === 'me' && (
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: '#ffffff'
+                      }} />
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px', color: modalStyles.textColor }}>
+                    Thu hồi với bạn
+                  </div>
+                  <div style={{ fontSize: '13px', color: modalStyles.subTextColor, lineHeight: '1.4' }}>
+                    Tin nhắn này sẽ bị gỡ khỏi thiết bị của bạn, nhưng vẫn hiển thị với các thành viên khác trong đoạn chat.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Footer / Buttons */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              padding: '12px 20px',
+              backgroundColor: modalStyles.footerBg,
+              borderTop: modalStyles.borderBottom
+            }}>
+              <button
+                type="button"
+                onClick={() => setRecallModalTarget(null)}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#0084ff',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'} transition-colors`}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (recallOption === 'everyone') {
+                    recallMessage(recallModalTarget.id);
+                  } else {
+                    hideMessage(recallModalTarget.id);
+                  }
+                  setRecallModalTarget(null);
+                }}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#0084ff',
+                  color: '#ffffff',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                className="hover:opacity-90 transition-opacity"
+              >
+                Gỡ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Pin Confirmation Modal */}
+      {pinModalTarget && (
+        <div 
+          id="ams-pin-modal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: modalStyles.overlayBg,
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            animation: 'fadeIn 0.18s ease'
+          }}
+        >
+          <div style={{
+            width: '540px',
+            maxWidth: '90vw',
+            backgroundColor: modalStyles.cardBg,
+            border: modalStyles.cardBorder,
+            borderRadius: '16px',
+            boxShadow: modalStyles.cardShadow,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            color: modalStyles.textColor,
+            transition: 'background-color 0.2s, color 0.2s, border-color 0.2s'
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px',
+              borderBottom: modalStyles.borderBottom
+            }}>
+              <h4 style={{ fontWeight: 600, fontSize: '18px', margin: 0, color: modalStyles.textColor }}>
+                Ghim tin nhắn này?
+              </h4>
+              <button
+                type="button"
+                onClick={() => setPinModalTarget(null)}
+                style={{ 
+                  background: modalStyles.closeBtnBg, 
+                  border: 'none', 
+                  color: modalStyles.closeBtnColor, 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  width: '32px', 
+                  height: '32px', 
+                  borderRadius: '50%' 
+                }}
+                className={`${isDark ? 'hover:bg-white/20' : 'hover:bg-black/10'} transition-colors`}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '6px', color: modalStyles.textColor }}>
+                Mọi người trong đoạn chat có thể xem tin nhắn đã ghim
+              </div>
+              <div style={{ fontSize: '13px', color: modalStyles.subTextColor, lineHeight: '1.4' }}>
+                Bạn có thể xem và bỏ ghim tin nhắn qua phần chi tiết hoặc danh sách tin nhắn đã ghim.
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              padding: '12px 20px',
+              backgroundColor: modalStyles.footerBg,
+              borderTop: modalStyles.borderBottom
+            }}>
+              <button
+                type="button"
+                onClick={() => setPinModalTarget(null)}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#0084ff',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'} transition-colors`}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  togglePin(pinModalTarget.id);
+                  setPinModalTarget(null);
+                }}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#0084ff',
+                  color: '#ffffff',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                className="hover:opacity-90 transition-opacity"
+              >
+                Ghim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pinned Messages List Modal */}
+      {showPinnedListModal && (
+        <div 
+          id="ams-pinned-list-modal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: modalStyles.overlayBg,
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            animation: 'fadeIn 0.18s ease'
+          }}
+        >
+          <div style={{
+            width: '540px',
+            maxWidth: '90vw',
+            height: '480px',
+            maxHeight: '80vh',
+            backgroundColor: modalStyles.cardBg,
+            border: modalStyles.cardBorder,
+            borderRadius: '16px',
+            boxShadow: modalStyles.cardShadow,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            color: modalStyles.textColor,
+            transition: 'background-color 0.2s, color 0.2s, border-color 0.2s'
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px',
+              borderBottom: modalStyles.borderBottom
+            }}>
+              <h4 style={{ fontWeight: 600, fontSize: '18px', margin: 0, color: modalStyles.textColor }}>
+                Tin nhắn đã ghim
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowPinnedListModal(false)}
+                style={{ 
+                  background: modalStyles.closeBtnBg, 
+                  border: 'none', 
+                  color: modalStyles.closeBtnColor, 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  width: '32px', 
+                  height: '32px', 
+                  borderRadius: '50%' 
+                }}
+                className={`${isDark ? 'hover:bg-white/20' : 'hover:bg-black/10'} transition-colors`}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* List Body */}
+            <div style={{ 
+              flex: 1, 
+              overflowY: 'auto', 
+              padding: '12px 16px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '10px' 
+            }} className="ams-pinned-list-container">
+              <style>{`
+                .ams-pinned-list-container::-webkit-scrollbar { width: 6px; }
+                .ams-pinned-list-container::-webkit-scrollbar-track { background: transparent; }
+                .ams-pinned-list-container::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.3); border-radius: 10px; }
+              `}</style>
+              
+              {pinnedMessages.length === 0 ? (
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  height: '100%', 
+                  color: modalStyles.subTextColor,
+                  gap: '8px'
+                }}>
+                  <Pin size={36} style={{ opacity: 0.4 }} />
+                  <span style={{ fontSize: '14px' }}>Chưa có tin nhắn đã ghim nào</span>
+                </div>
+              ) : (
+                pinnedMessages.map((msg) => {
+                  const initial = msg.senderName ? msg.senderName.charAt(0).toUpperCase() : '?';
+                  const isImage = msg.type === 'IMAGE';
+                  const isVideo = msg.type === 'VIDEO';
+                  const isFile = msg.type === 'FILE';
+                  const shortTime = formatTime(msg.timestamp);
+                  
+                  let displayContent = msg.content;
+                  if (msg.recalled) {
+                    displayContent = 'Tin nhắn đã bị thu hồi';
+                  } else if (isImage) {
+                    displayContent = '[Hình ảnh]';
+                  } else if (isVideo) {
+                    displayContent = '[Video]';
+                  } else if (isFile) {
+                    displayContent = `[Tệp] ${msg.content}`;
+                  }
+                  
+                  return (
+                    <div
+                      key={msg.id}
+                      onClick={() => {
+                        const targetEl = document.getElementById(`msg-${msg.id}`);
+                        if (targetEl) {
+                          setShowPinnedListModal(false);
+                          targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          // Highlight effect
+                          const originalBg = targetEl.style.backgroundColor;
+                          targetEl.style.backgroundColor = 'rgba(234, 179, 8, 0.25)';
+                          setTimeout(() => {
+                            targetEl.style.backgroundColor = originalBg;
+                          }, 1500);
+                        } else {
+                          alert('Tin nhắn gốc nằm ngoài lịch sử hội thoại hiển thị hiện tại.');
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        border: '1px solid var(--border-subtle)',
+                        transition: 'background-color 0.15s ease'
+                      }}
+                      className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                        {/* Avatar */}
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--accent)',
+                          color: '#0b1f28',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          flexShrink: 0
+                        }}>
+                          {initial}
+                        </div>
+                        {/* Sender info & Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '2px' }}>
+                            <span style={{ fontWeight: 600, fontSize: '14px', color: modalStyles.textColor }}>
+                              {msg.senderName}
+                            </span>
+                            <span style={{ fontSize: '11px', color: modalStyles.subTextColor }}>
+                              {shortTime}
+                            </span>
+                          </div>
+                          <div style={{ 
+                            fontSize: '13px', 
+                            color: msg.recalled ? modalStyles.subTextColor : 'var(--text-primary)',
+                            fontStyle: msg.recalled ? 'italic' : 'normal',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '300px'
+                          }}>
+                            {displayContent}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Unpin Action */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePin(msg.id);
+                          setPinnedMessages(prev => prev.filter(m => m.id !== msg.id));
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          padding: '6px 12px',
+                          borderRadius: '6px'
+                        }}
+                        className="hover:bg-red-500/10 transition-colors"
+                      >
+                        Bỏ ghim
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
 

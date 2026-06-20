@@ -38,11 +38,39 @@ public class ChatController {
         return chatService.addReaction(chatReactionDto);
     }
 
+    // Receive message recall request from client via WebSocket
+    @MessageMapping("/chat.recall")
+    @SendTo("/topic/recall")
+    public ChatMessageDto recallMessage(@Payload ChatMessageDto chatMessageDto) {
+        return chatService.recallMessage(chatMessageDto.getId(), chatMessageDto.getSenderName());
+    }
+
+    // Receive hide message request from client via WebSocket
+    @MessageMapping("/chat.hide")
+    @SendTo("/topic/hide")
+    public ChatMessageDto hideMessage(@Payload ChatMessageDto chatMessageDto) {
+        return chatService.hideMessage(chatMessageDto.getId(), chatMessageDto.getSenderName());
+    }
+
+    // Receive message pin request from client via WebSocket
+    @MessageMapping("/chat.pin")
+    @SendTo("/topic/pin")
+    public ChatMessageDto pinMessage(@Payload ChatMessageDto chatMessageDto) {
+        return chatService.togglePinMessage(chatMessageDto.getId(), chatMessageDto.getSenderName());
+    }
+
     // REST endpoint to load chat history
     @GetMapping("/history")
     public ResponseEntity<List<ChatMessageDto>> getChatHistory(@RequestParam(defaultValue = "50") int limit) {
         List<ChatMessageDto> history = chatService.getChatHistory(limit);
         return ResponseEntity.ok(history);
+    }
+
+    // REST endpoint to load all pinned messages
+    @GetMapping("/pinned")
+    public ResponseEntity<List<ChatMessageDto>> getPinnedMessages() {
+        List<ChatMessageDto> pinned = chatService.getPinnedMessages();
+        return ResponseEntity.ok(pinned);
     }
 }
 
