@@ -334,7 +334,7 @@ export default function ChatWidget() {
   };
 
   // Filter system users based on the current filter text
-  const filteredMentionUsers = systemUsers
+  const filteredMentionUsers = [...systemUsers, 'bluemoon']
     .filter(name => name && name !== user?.username && name.toLowerCase().includes(mentionFilter.toLowerCase()));
 
   const handleFileUpload = async (e) => {
@@ -410,12 +410,14 @@ export default function ChatWidget() {
   const getRoleColor = (role) => {
     if (role === 'ADMIN' || role === 'MANAGER') return 'text-red-600 font-bold';
     if (role === 'STAFF') return 'text-orange-500 font-bold';
+    if (role === 'AI_BOT') return 'text-violet-600 font-extrabold';
     return 'text-blue-600 font-semibold';
   };
 
   const getRoleBadge = (role) => {
     if (role === 'ADMIN') return <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded ml-1">BQL</span>;
     if (role === 'STAFF') return <span className="text-[10px] bg-orange-100 text-orange-600 px-1 rounded ml-1">NV</span>;
+    if (role === 'AI_BOT') return <span className="text-[10px] bg-violet-100 text-violet-600 px-1 rounded ml-1 font-bold">🤖 TRỢ LÝ AI</span>;
     return null;
   };
 
@@ -425,35 +427,116 @@ export default function ChatWidget() {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Detect URLs in text and render as clickable links
-  const renderTextWithLinks = (text) => {
+  // Detect URLs, Markdown bold/italic, lists, code in text and render them
+  const renderMessageContent = (text) => {
     if (!text) return null;
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-    return parts.map((part, i) => {
-      if (urlRegex.test(part)) {
-        urlRegex.lastIndex = 0; // reset after test()
+
+    // Split by code blocks first
+    const blocks = text.split(/(```[\s\S]*?```)/g);
+    
+    return blocks.map((block, index) => {
+      if (block.startsWith('```') && block.endsWith('```')) {
+        const code = block.substring(3, block.length - 3).trim();
         return (
-          <a
-            key={i}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            style={{
-              color: 'inherit',
-              textDecoration: 'underline',
-              opacity: 0.85,
-              wordBreak: 'break-all'
+          <pre 
+            key={index} 
+            style={{ 
+              backgroundColor: 'rgba(0,0,0,0.15)', 
+              padding: '8px 12px', 
+              borderRadius: '6px', 
+              fontFamily: 'monospace', 
+              fontSize: '12px', 
+              overflowX: 'auto',
+              margin: '6px 0',
+              border: '1px solid var(--border-subtle)',
+              whiteSpace: 'pre-wrap'
             }}
           >
-            {part}
-          </a>
+            <code>{code}</code>
+          </pre>
         );
       }
-      return part;
+
+      // Now process inline bold, italic, code, list items, and newlines
+      const lines = block.split('\n');
+      return (
+        <div key={index}>
+          {lines.map((line, lineIdx) => {
+            let content = line;
+            
+            // Check for bullet list item
+            const isListItem = content.startsWith('- ') || content.startsWith('* ');
+            if (isListItem) {
+              content = content.substring(2);
+            }
+
+            // Render inline elements: **bold**, *italic*, `code`, and URL links
+            const parts = [];
+            const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`|https?:\/\/[^\s]+)/g;
+            const splitParts = content.split(regex);
+
+            splitParts.forEach((part, partIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                parts.push(<strong key={partIdx}>{part.substring(2, part.length - 2)}</strong>);
+              } else if (part.startsWith('*') && part.endsWith('*')) {
+                parts.push(<em key={partIdx}>{part.substring(1, part.length - 1)}</em>);
+              } else if (part.startsWith('`') && part.endsWith('`')) {
+                parts.push(
+                  <code 
+                    key={partIdx} 
+                    style={{ 
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)', 
+                      padding: '2px 4px', 
+                      borderRadius: '4px', 
+                      fontFamily: 'monospace', 
+                      fontSize: '12px' 
+                    }}
+                  >
+                    {part.substring(1, part.length - 1)}
+                  </code>
+                );
+              } else if (/^https?:\/\//.test(part)) {
+                parts.push(
+                  <a
+                    key={partIdx}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                      color: 'inherit',
+                      textDecoration: 'underline',
+                      opacity: 0.85,
+                      wordBreak: 'break-all'
+                    }}
+                  >
+                    {part}
+                  </a>
+                );
+              } else {
+                parts.push(part);
+              }
+            });
+
+            if (isListItem) {
+              return (
+                <ul key={lineIdx} style={{ margin: '2px 0 2px 16px', padding: 0, listStyleType: 'disc' }}>
+                  <li>{parts}</li>
+                </ul>
+              );
+            }
+
+            return (
+              <p key={lineIdx} style={{ margin: 0, minHeight: lineIdx > 0 ? '4px' : '0' }}>
+                {parts}
+              </p>
+            );
+          })}
+        </div>
+      );
     });
   };
+
 
   // Only show for logged in users
   if (!user) return null;
@@ -750,9 +833,21 @@ export default function ChatWidget() {
                             maxWidth: '80%',
                             wordBreak: 'break-word',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            backgroundColor: msg.recalled ? 'transparent' : (isMe ? 'var(--accent)' : 'var(--bg-card-solid)'),
+                            backgroundColor: msg.recalled ? 'transparent' : (
+                              isMe ? 'var(--accent)' : (
+                                msg.senderName === 'BlueMoon AI'
+                                  ? (isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.08)')
+                                  : 'var(--bg-card-solid)'
+                              )
+                            ),
                             color: msg.recalled ? 'var(--text-muted)' : (isMe ? '#0b1f28' : 'var(--text-primary)'),
-                            border: msg.recalled ? '1px dashed var(--border)' : (isMe ? 'none' : '1px solid var(--border)'),
+                            border: msg.recalled ? '1px dashed var(--border)' : (
+                              isMe ? 'none' : (
+                                msg.senderName === 'BlueMoon AI'
+                                  ? '1px solid rgba(139, 92, 246, 0.45)'
+                                  : '1px solid var(--border)'
+                              )
+                            ),
                             fontStyle: msg.recalled ? 'italic' : 'normal',
                             borderRadius: isMe
                               ? `18px ${isFirstInGroup ? '18px' : '4px'} ${isLastInGroup ? '18px' : '4px'} 18px`
@@ -867,7 +962,7 @@ export default function ChatWidget() {
                               )}
                               {msg.type !== 'FILE' && msg.content && (
                                 <div style={{ padding: msg.type !== 'TEXT' ? '10px 16px' : '0' }}>
-                                  {renderTextWithLinks(msg.content)}
+                                  {renderMessageContent(msg.content)}
                                   {msg.type === 'TEXT' && getFirstUrl(msg.content) && (
                                     <LinkPreview url={getFirstUrl(msg.content)} />
                                   )}
@@ -1101,8 +1196,14 @@ export default function ChatWidget() {
                           style={{ padding: '8px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}
                           className="hover:bg-slate-800"
                         >
-                          <User size={16} />
-                          <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{u}</span>
+                          {u === 'bluemoon' ? (
+                            <span style={{ fontSize: '16px' }}>🤖</span>
+                          ) : (
+                            <User size={16} />
+                          )}
+                          <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                            {u === 'bluemoon' ? 'bluemoon (BlueMoon AI)' : u}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -1672,8 +1773,8 @@ export default function ChatWidget() {
                           width: '36px',
                           height: '36px',
                           borderRadius: '50%',
-                          backgroundColor: 'var(--accent)',
-                          color: '#0b1f28',
+                          backgroundColor: msg.senderName === 'BlueMoon AI' ? '#8b5cf6' : 'var(--accent)',
+                          color: msg.senderName === 'BlueMoon AI' ? '#ffffff' : '#0b1f28',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1681,7 +1782,7 @@ export default function ChatWidget() {
                           fontSize: '14px',
                           flexShrink: 0
                         }}>
-                          {initial}
+                          {msg.senderName === 'BlueMoon AI' ? '🤖' : initial}
                         </div>
                         {/* Sender info & Content */}
                         <div style={{ flex: 1, minWidth: 0 }}>

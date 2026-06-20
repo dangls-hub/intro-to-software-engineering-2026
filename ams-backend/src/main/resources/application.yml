@@ -50,3 +50,7 @@ app:
     proof-dir: uploads/proofs
     cccd-dir: uploads/cccd
     chat-dir: uploads/chat
+  gemini:
+    api-key: ${GEMINI_API_KEY:demo_key}
+    model: gemini-1.5-flash
+
