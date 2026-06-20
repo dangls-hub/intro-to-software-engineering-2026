@@ -273,6 +273,13 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
     }
 
+    /**
+     * Lấy danh sách toàn bộ username trong hệ thống
+     */
+    public List<String> getAllUsernames() {
+        return userRepository.findAllUsernames();
+    }
+
     // =========================================================================
     // Google OAuth
     // =========================================================================

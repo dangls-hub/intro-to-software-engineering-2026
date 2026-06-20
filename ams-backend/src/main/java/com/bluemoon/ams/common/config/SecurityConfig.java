@@ -53,6 +53,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/otp/**").permitAll()
                         .requestMatchers("/api/v1/payment-requests/proof/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/ws-notifications/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         
                         // Route bảo vệ - yêu cầu JWT token
                         .anyRequest().authenticated()
