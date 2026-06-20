@@ -31,8 +31,8 @@ spring:
             required: true
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 server:
   port: 8080
@@ -49,3 +49,4 @@ app:
   upload:
     proof-dir: uploads/proofs
     cccd-dir: uploads/cccd
+    chat-dir: uploads/chat
