@@ -186,6 +186,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
     }
 
+    /**
+     * API lấy danh sách toàn bộ username trong hệ thống để dùng cho chức năng Mention (@)
+     * GET /api/v1/auth/users/usernames
+     */
+    @GetMapping("/users/usernames")
+    public ResponseEntity<ApiResponse<java.util.List<String>>> getAllUsernames() {
+        return ResponseEntity.ok(ApiResponse.ok("Lấy danh sách username thành công", authService.getAllUsernames()));
+    }
+
     private UserInfoResponse buildUserInfoResponse(User user) {
         Long apartmentId = null;
         String apartmentCode = null;

@@ -42,4 +42,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Tìm user theo vai trò
      */
     java.util.List<User> findByRole(com.bluemoon.ams.module.auth.entity.Role role);
+
+    /**
+     * Lấy toàn bộ danh sách username trong hệ thống
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT u.username FROM User u")
+    java.util.List<String> findAllUsernames();
 }

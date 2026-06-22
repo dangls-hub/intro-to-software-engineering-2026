@@ -65,7 +65,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("Password reset email sent successfully to {}", toEmail);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | org.springframework.mail.MailException e) {
             log.error("Failed to send password reset email to {}", toEmail, e);
             throw new RuntimeException("Không thể gửi email lúc này, vui lòng thử lại sau.");
         }

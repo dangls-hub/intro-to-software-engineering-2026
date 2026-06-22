@@ -20,10 +20,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    # Credential lấy từ biến môi trường — KHÔNG hardcode secret vào repo.
-    # username giữ default tiện dev (không phải secret); password bắt buộc set qua MAIL_PASSWORD.
-    username: ${MAIL_USERNAME:bmoonamin@gmail.com}
-    password: ${MAIL_PASSWORD:}
+    username: bmoonamin@gmail.com
+    password: iurk rpbv dfwp ltbu
     properties:
       mail:
         smtp:
@@ -33,8 +31,8 @@ spring:
             required: true
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 server:
   port: 8080
@@ -50,3 +48,5 @@ app:
     client-id: 553757322807-spvpjrtctpntbt6onovneqptc3l5p919.apps.googleusercontent.com
   upload:
     proof-dir: uploads/proofs
+    cccd-dir: uploads/cccd
+    chat-dir: uploads/chat

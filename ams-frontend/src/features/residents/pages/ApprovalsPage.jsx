@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, RefreshCcw, Search, X, XCircle, AlertTriangle } from 'lucide-react';
+import { Check, CreditCard, Eye, RefreshCcw, Search, X, XCircle, AlertTriangle } from 'lucide-react';
 import {
   approveResident,
   fetchPendingResidents,
@@ -7,11 +7,18 @@ import {
 } from '../api/residentsApi';
 import { useToast } from '../../../components/ui/Toast';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') ?? '';
+
 const approvalMap = {
   PENDING: { label: 'Chờ duyệt', cls: 'pending' },
   APPROVED: { label: 'Đã duyệt', cls: 'approved' },
   REJECTED: { label: 'Từ chối', cls: 'rejected' },
 };
+
+function cccdImageUrl(path) {
+  if (!path) return null;
+  return `${API_BASE}/${path}`;
+}
 
 function ApprovalsPage() {
   const [residents, setResidents] = useState([]);
@@ -21,6 +28,7 @@ function ApprovalsPage() {
   const [rejectModal, setRejectModal] = useState(null); // { id, fullName }
   const [rejectReason, setRejectReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(null); // id being processed
+  const [cccdModal, setCccdModal] = useState(null); // resident object to show CCCD
   const showToast = useToast();
 
   async function loadPending() {
@@ -142,6 +150,7 @@ function ApprovalsPage() {
                   <th>CCCD</th>
                   <th>Điện thoại</th>
                   <th>Căn hộ</th>
+                  <th>Ảnh CCCD</th>
                   <th>Ngày tạo</th>
                   <th>Trạng thái</th>
                   <th aria-label="Thao tác" />
@@ -151,12 +160,28 @@ function ApprovalsPage() {
                 {filtered.map((resident) => {
                   const st = approvalMap[resident.approvalStatus] || approvalMap.PENDING;
                   const processing = isProcessing === resident.id;
+                  const hasCccd = resident.cccdFrontImage || resident.cccdBackImage;
                   return (
                     <tr key={resident.id}>
                       <td style={{ fontWeight: 700 }}>{resident.fullName || '—'}</td>
                       <td>{resident.identityNumber || '—'}</td>
                       <td>{resident.phoneNumber || '—'}</td>
                       <td>{resident.roomNumber || '—'}</td>
+                      <td>
+                        {hasCccd ? (
+                          <button
+                            className="icon-button"
+                            onClick={() => setCccdModal(resident)}
+                            title="Xem ảnh CCCD"
+                            type="button"
+                            style={{ color: 'var(--accent)' }}
+                          >
+                            <Eye size={16} />
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>Chưa có</span>
+                        )}
+                      </td>
                       <td>
                         {resident.createdAt
                           ? new Date(resident.createdAt).toLocaleDateString('vi-VN')
@@ -195,6 +220,96 @@ function ApprovalsPage() {
           </div>
         )}
       </section>
+
+      {/* CCCD Image View Modal */}
+      {cccdModal ? (
+        <div className="modal-backdrop" onClick={() => setCccdModal(null)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Xem ảnh CCCD"
+            style={{ maxWidth: 680 }}
+          >
+            <div className="modal-header">
+              <CreditCard size={20} style={{ color: 'var(--accent)' }} />
+              <h3>Ảnh CCCD — {cccdModal.fullName}</h3>
+              <button className="icon-button" onClick={() => setCccdModal(null)} type="button">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: '8px 0' }}>
+              <div>
+                <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Mặt trước
+                </p>
+                {cccdModal.cccdFrontImage ? (
+                  <img
+                    src={cccdImageUrl(cccdModal.cccdFrontImage)}
+                    alt="CCCD mặt trước"
+                    style={{
+                      width: '100%',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border)',
+                      objectFit: 'contain',
+                      maxHeight: 260,
+                      background: 'var(--bg-subtle)',
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    padding: '40px 16px',
+                    textAlign: 'center',
+                    border: '1px dashed var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                  }}>
+                    Chưa upload
+                  </div>
+                )}
+              </div>
+              <div>
+                <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Mặt sau
+                </p>
+                {cccdModal.cccdBackImage ? (
+                  <img
+                    src={cccdImageUrl(cccdModal.cccdBackImage)}
+                    alt="CCCD mặt sau"
+                    style={{
+                      width: '100%',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border)',
+                      objectFit: 'contain',
+                      maxHeight: 260,
+                      background: 'var(--bg-subtle)',
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    padding: '40px 16px',
+                    textAlign: 'center',
+                    border: '1px dashed var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                  }}>
+                    Chưa upload
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: 12 }}>
+              <button className="secondary-button" onClick={() => setCccdModal(null)} type="button">
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Reject reason modal */}
       {rejectModal ? (
