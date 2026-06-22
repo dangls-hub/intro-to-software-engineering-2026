@@ -82,6 +82,56 @@ export function useChat() {
           });
         });
       });
+      // Subscribe to message recalls
+      stompClient.subscribe('/topic/recall', (messageOutput) => {
+        const recalledMessage = JSON.parse(messageOutput.body);
+        setMessages((prevMessages) => {
+          return prevMessages.map((msg) => {
+            if (msg.id === recalledMessage.id) {
+              return {
+                ...msg,
+                content: '',
+                mediaUrl: null,
+                recalled: true,
+                reactions: {}
+              };
+            }
+            return msg;
+          });
+        });
+      });
+
+      // Subscribe to message hides
+      stompClient.subscribe('/topic/hide', (messageOutput) => {
+        const hiddenMessage = JSON.parse(messageOutput.body);
+        setMessages((prevMessages) => {
+          return prevMessages.map((msg) => {
+            if (msg.id === hiddenMessage.id) {
+              return {
+                ...msg,
+                hiddenUsernames: hiddenMessage.hiddenUsernames
+              };
+            }
+            return msg;
+          });
+        });
+      });
+
+      // Subscribe to message pins
+      stompClient.subscribe('/topic/pin', (messageOutput) => {
+        const pinnedMessage = JSON.parse(messageOutput.body);
+        setMessages((prevMessages) => {
+          return prevMessages.map((msg) => {
+            if (msg.id === pinnedMessage.id) {
+              return {
+                ...msg,
+                pinned: pinnedMessage.pinned
+              };
+            }
+            return msg;
+          });
+        });
+      });
     };
 
     stompClient.onStompError = (frame) => {
@@ -139,6 +189,54 @@ export function useChat() {
     }
   }, [isConnected, user]);
 
-  return { messages, sendMessage, sendReaction, isConnected, isHistoryLoaded };
+  const recallMessage = useCallback((messageId) => {
+    if (stompClientRef.current && isConnected && user) {
+      const recallDto = {
+        id: messageId,
+        senderName: user.username
+      };
+      
+      stompClientRef.current.publish({
+        destination: '/app/chat.recall',
+        body: JSON.stringify(recallDto)
+      });
+    }
+  }, [isConnected, user]);
+
+  const hideMessage = useCallback((messageId) => {
+    if (stompClientRef.current && isConnected && user) {
+      const hideDto = {
+        id: messageId,
+        senderName: user.username
+      };
+      
+      stompClientRef.current.publish({
+        destination: '/app/chat.hide',
+        body: JSON.stringify(hideDto)
+      });
+    }
+  }, [isConnected, user]);
+
+  const togglePin = useCallback((messageId) => {
+    if (stompClientRef.current && isConnected && user) {
+      const pinDto = {
+        id: messageId,
+        senderName: user.username
+      };
+      
+      stompClientRef.current.publish({
+        destination: '/app/chat.pin',
+        body: JSON.stringify(pinDto)
+      });
+    }
+  }, [isConnected, user]);
+
+  const visibleMessages = messages.filter(msg => {
+    if (!msg.hiddenUsernames) return true;
+    const hiddenUsers = msg.hiddenUsernames.split(',');
+    return !hiddenUsers.includes(user?.username);
+  });
+
+  return { messages: visibleMessages, sendMessage, sendReaction, recallMessage, hideMessage, togglePin, isConnected, isHistoryLoaded };
 }
 

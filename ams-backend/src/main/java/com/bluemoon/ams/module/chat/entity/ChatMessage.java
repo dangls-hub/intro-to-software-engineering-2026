@@ -45,5 +45,16 @@ public class ChatMessage {
     private String replyToContent;
 
     private String replyToSender;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean recalled = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String hiddenUsernames;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean pinned = false;
 }
 
