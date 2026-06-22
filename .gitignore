@@ -108,9 +108,32 @@ postman/
 **/uploads/
 claude.md
 
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+# =============================
+# Playwright & Testing
+# =============================
+**/test-results/
+**/playwright-report/
+**/blob-report/
+**/.playwright/
+**/playwright/.cache/
+**/playwright/.auth/
+
+# =============================
+# Additional Java & Maven
+# =============================
+*.class
+**/hs_err_pid*.log
+**/replay_pid*.log
+.flattened-pom.xml
+
+# =============================
+# Additional Frontend & Node
+# =============================
+.eslintcache
+.stylelintcache
+.prettiercache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
