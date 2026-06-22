@@ -26,7 +26,6 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReactionRepository chatReactionRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final GeminiService geminiService;
 
     @Transactional
     public ChatMessageDto saveMessage(ChatMessageDto chatMessageDto) {
@@ -53,56 +52,6 @@ public class ChatService {
         chatMessageDto.setReplyToSender(savedMessage.getReplyToSender());
         chatMessageDto.setReactions(new HashMap<>());
         chatMessageDto.setPinned(savedMessage.isPinned());
-
-        // Intercept @bluemoon mentions to trigger Gemini AI response
-        if (chatMessageDto.getContent() != null && chatMessageDto.getContent().contains("@bluemoon")) {
-            String question = chatMessageDto.getContent().replace("@bluemoon", "").trim();
-            final Long userMsgId = savedMessage.getId();
-            final String userMsgContent = savedMessage.getContent();
-            final String userMsgSender = savedMessage.getSenderName();
-
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
-                try {
-                    // Call Gemini API asynchronously
-                    String aiResponse = geminiService.askGemini(question);
-
-                    // Create AI response message
-                    ChatMessage aiMessage = ChatMessage.builder()
-                            .content(aiResponse)
-                            .senderName("BlueMoon AI")
-                            .senderRole("AI_BOT")
-                            .type("TEXT")
-                            .timestamp(LocalDateTime.now())
-                            .replyToId(userMsgId)
-                            .replyToContent(userMsgContent)
-                            .replyToSender(userMsgSender)
-                            .build();
-
-                    ChatMessage savedAiMessage = chatMessageRepository.save(aiMessage);
-
-                    // Construct DTO
-                    ChatMessageDto aiMsgDto = ChatMessageDto.builder()
-                            .id(savedAiMessage.getId())
-                            .content(savedAiMessage.getContent())
-                            .senderName(savedAiMessage.getSenderName())
-                            .senderRole(savedAiMessage.getSenderRole())
-                            .type(savedAiMessage.getType())
-                            .timestamp(savedAiMessage.getTimestamp())
-                            .replyToId(savedAiMessage.getReplyToId())
-                            .replyToContent(savedAiMessage.getReplyToContent())
-                            .replyToSender(savedAiMessage.getReplyToSender())
-                            .reactions(new HashMap<>())
-                            .pinned(false)
-                            .build();
-
-                    // Send response to all clients
-                    messagingTemplate.convertAndSend("/topic/public", aiMsgDto);
-                } catch (Exception e) {
-                    System.err.println("Failed to process Gemini request: " + e.getMessage());
-                }
-            });
-        }
-
         return chatMessageDto;
     }
 
