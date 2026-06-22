@@ -5,7 +5,7 @@ import com.bluemoon.ams.module.resident.dto.HouseholdRequest;
 import com.bluemoon.ams.module.resident.dto.HouseholdResponse;
 import com.bluemoon.ams.module.resident.service.HouseholdService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,13 +19,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/households")
-@RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class HouseholdController {
     /* Chứa các API liên quan đến hộ gia đình: tạo, cập nhật, xoá, lấy thông tin, ...
     */
 
-    private final HouseholdService householdService;
+    @Autowired
+    private HouseholdService householdService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<HouseholdResponse>>> getAllHouseholds(

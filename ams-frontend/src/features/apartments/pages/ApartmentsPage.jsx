@@ -18,7 +18,7 @@ import {
 import { useToast } from '../../../components/ui/Toast';
 
 /* ── Design tokens ─────────────────────────────────── */
-const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
+const SERIF = { fontFamily: "var(--font-display)" };
 const GOLD  = '#c9a96e';
 
 /* ── Premium status config (replaces old statusMap) ── */
@@ -137,7 +137,7 @@ function ApartmentsPage() {
   const filtered = apartments.filter(
     (a) =>
       (a.roomNumber || '').toLowerCase().includes(search.toLowerCase()) ||
-      (a.floor || '').toLowerCase().includes(search.toLowerCase())
+      String(a.floor || '').toLowerCase().includes(search.toLowerCase())
   );
   /* ── End preserved logic ─────────────────────────── */
 

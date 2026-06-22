@@ -8,6 +8,9 @@ import com.bluemoon.ams.module.announcement.dto.AnnouncementResponse;
 import com.bluemoon.ams.module.announcement.entity.Announcement;
 import com.bluemoon.ams.module.announcement.mapper.AnnouncementMapper;
 import com.bluemoon.ams.module.announcement.repository.AnnouncementRepository;
+import com.bluemoon.ams.module.notification.service.NotificationService;
+import com.bluemoon.ams.common.service.BlueMoonEmailService;
+import com.bluemoon.ams.module.auth.entity.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +24,19 @@ public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final UserRepository userRepository;
     private final AnnouncementMapper announcementMapper;
+    private final NotificationService notificationService;
+    private final BlueMoonEmailService blueMoonEmailService;
 
     public AnnouncementService(AnnouncementRepository announcementRepository,
                                UserRepository userRepository,
-                               AnnouncementMapper announcementMapper) {
+                               AnnouncementMapper announcementMapper,
+                               NotificationService notificationService,
+                               BlueMoonEmailService blueMoonEmailService) {
         this.announcementRepository = announcementRepository;
         this.userRepository = userRepository;
         this.announcementMapper = announcementMapper;
+        this.notificationService = notificationService;
+        this.blueMoonEmailService = blueMoonEmailService;
     }
 
     @Transactional(readOnly = true)
@@ -52,6 +61,25 @@ public class AnnouncementService {
         announcement.setPostedBy(postedBy);
 
         Announcement saved = announcementRepository.save(announcement);
+
+        // Gửi thông báo (chuông in-app) + email đến toàn bộ cư dân
+        List<User> residents = userRepository.findByRole(Role.RESIDENT);
+        for (User resident : residents) {
+            notificationService.createAndSendNotification(
+                    resident.getId(),
+                    postedBy.getId(),
+                    "NEW_ANNOUNCEMENT",
+                    "Thông báo mới từ BQL: " + saved.getTitle(),
+                    "/announcements"
+            );
+
+            // Gửi email cho cư dân có email. Chạy @Async, lỗi gửi mail không ảnh hưởng việc đăng bảng tin.
+            if (resident.getEmail() != null && !resident.getEmail().isBlank()) {
+                blueMoonEmailService.sendAnnouncement(
+                        resident.getEmail(), resident.getFullName(), saved.getTitle(), saved.getContent());
+            }
+        }
+
         return announcementMapper.toResponse(saved);
     }
 

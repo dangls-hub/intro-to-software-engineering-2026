@@ -47,6 +47,10 @@ public class ResidentMapper {
             r.setApprovedByName(resident.getApprovedByUser().getFullName());
         }
 
+        // CCCD image fields
+        r.setCccdFrontImage(resident.getCccdFrontImage());
+        r.setCccdBackImage(resident.getCccdBackImage());
+
         return r;
     }
 

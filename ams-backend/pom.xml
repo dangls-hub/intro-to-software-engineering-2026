@@ -20,6 +20,7 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.5</jjwt.version>
+        <lombok.version>1.18.32</lombok.version>
     </properties>
 
     <dependencies>
@@ -45,6 +46,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <!-- Validation -->
@@ -93,17 +100,11 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- MapStruct -->
+        <!-- MapStruct runtime (processor removed — no @Mapper interfaces in project; incompatible with JDK 24) -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>1.5.5.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>1.5.5.Final</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Google API Client — dùng để verify Google ID Token ở backend -->

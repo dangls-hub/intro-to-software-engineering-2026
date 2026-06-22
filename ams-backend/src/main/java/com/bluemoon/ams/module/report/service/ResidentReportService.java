@@ -10,6 +10,9 @@ import com.bluemoon.ams.module.report.entity.ReportStatus;
 import com.bluemoon.ams.module.report.entity.ResidentReport;
 import com.bluemoon.ams.module.report.mapper.ReportMapper;
 import com.bluemoon.ams.module.report.repository.ResidentReportRepository;
+import com.bluemoon.ams.module.notification.service.NotificationService;
+import com.bluemoon.ams.common.service.BlueMoonEmailService;
+import com.bluemoon.ams.module.auth.entity.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +27,19 @@ public class ResidentReportService {
     private final ResidentReportRepository reportRepository;
     private final UserRepository userRepository;
     private final ReportMapper reportMapper;
+    private final NotificationService notificationService;
+    private final BlueMoonEmailService blueMoonEmailService;
 
     public ResidentReportService(ResidentReportRepository reportRepository,
                                  UserRepository userRepository,
-                                 ReportMapper reportMapper) {
+                                 ReportMapper reportMapper,
+                                 NotificationService notificationService,
+                                 BlueMoonEmailService blueMoonEmailService) {
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
         this.reportMapper = reportMapper;
+        this.notificationService = notificationService;
+        this.blueMoonEmailService = blueMoonEmailService;
     }
 
     /**
@@ -45,6 +54,19 @@ public class ResidentReportService {
         report.setStatus(ReportStatus.PENDING);
 
         ResidentReport saved = reportRepository.save(report);
+
+        // Send notification to all ADMIN users
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createAndSendNotification(
+                    admin.getId(),
+                    submitter.getId(),
+                    "NEW_REPORT",
+                    "Có một phản ánh mới từ cư dân " + submitter.getFullName() + ": " + saved.getTitle(),
+                    "/reports"
+            );
+        }
+
         return reportMapper.toResponse(saved);
     }
 
@@ -94,6 +116,29 @@ public class ResidentReportService {
         report.setResolvedAt(LocalDateTime.now());
 
         ResidentReport saved = reportRepository.save(report);
+
+        // Send notification to the submitter
+        if (saved.getSubmittedBy() != null) {
+            String statusVi = "PENDING".equals(request.getStatus().toUpperCase()) ? "Đang chờ" 
+                            : "RESOLVED".equals(request.getStatus().toUpperCase()) ? "Đã giải quyết" 
+                            : "REJECTED".equals(request.getStatus().toUpperCase()) ? "Từ chối" : "Đã cập nhật";
+            notificationService.createAndSendNotification(
+                    saved.getSubmittedBy().getId(),
+                    reviewer.getId(),
+                    "REPORT_REVIEWED",
+                    "Phản ánh '" + saved.getTitle() + "' của bạn đã được cập nhật trạng thái thành: " + statusVi,
+                    "/my-reports"
+            );
+
+            // Email cập nhật ticket cho người gửi (nếu có email). Chạy @Async, không ảnh hưởng giao dịch.
+            String email = saved.getSubmittedBy().getEmail();
+            if (email != null && !email.isBlank()) {
+                blueMoonEmailService.sendTicketUpdate(
+                        email, saved.getSubmittedBy().getFullName(),
+                        saved.getTitle(), statusVi, saved.getResolveNote());
+            }
+        }
+
         return reportMapper.toResponse(saved);
     }
 }

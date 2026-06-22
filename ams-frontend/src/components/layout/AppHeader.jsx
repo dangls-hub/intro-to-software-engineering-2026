@@ -1,5 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { Bell, ChevronRight, Menu, X } from 'lucide-react';
+import NotificationBell from '../NotificationBell';
+import { useAuth } from '../../store/authStore';
 
 const ROUTE_MAP = {
   '/':            'Tổng quan',
@@ -20,6 +22,8 @@ function initials(name = '') {
 export default function AppHeader({ displayName, sidebarOpen, onToggleSidebar }) {
   const { pathname } = useLocation();
   const pageLabel = ROUTE_MAP[pathname] ?? 'BlueMoon AMS';
+  const { user, token } = useAuth();
+  const userId = user?.userId || user?.id;
 
   return (
     <header className="app-header">
@@ -48,14 +52,7 @@ export default function AppHeader({ displayName, sidebarOpen, onToggleSidebar })
 
       {/* Right: notifications + user chip */}
       <div className="app-header-right">
-        <button
-          className="header-bell"
-          type="button"
-          aria-label="Thông báo"
-        >
-          <Bell size={16} strokeWidth={2} />
-          <span className="header-bell-dot" aria-hidden="true" />
-        </button>
+        {userId && <NotificationBell userId={userId} token={token || localStorage.getItem('token')} />}
 
         <div
           className="header-user-chip"

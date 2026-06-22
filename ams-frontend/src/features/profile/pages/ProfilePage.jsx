@@ -4,9 +4,11 @@ import {
   Building2,
   CheckCircle2,
   Clock3,
+  CreditCard,
   RefreshCcw,
   Save,
   Send,
+  Upload,
   UserRound,
   XCircle,
 } from 'lucide-react';
@@ -20,7 +22,9 @@ import {
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../store/authStore';
 
-const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
+const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') ?? '';
+
+const SERIF = { fontFamily: "var(--font-display)" };
 
 const emptyRequest = {
   apartmentId: '',
@@ -69,6 +73,73 @@ function requestToForm(request) {
   };
 }
 
+function cccdImageUrl(path) {
+  if (!path) return null;
+  // path stored as "uploads/cccd/xxx.png" — serve via backend static resource handler
+  return `${API_BASE}/${path}`;
+}
+
+/* ---------- CCCD Upload Card ---------- */
+function CccdUploadCard({ label, file, onFileChange, existingUrl, inputId }) {
+  const previewSrc = file ? URL.createObjectURL(file) : existingUrl;
+
+  return (
+    <label
+      htmlFor={inputId}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 8,
+        padding: '14px 10px',
+        border: '2px dashed var(--border)',
+        borderRadius: 'var(--radius-md)',
+        cursor: 'pointer',
+        background: previewSrc ? 'var(--bg-card)' : 'var(--bg-subtle)',
+        transition: 'border-color 0.2s, background 0.2s',
+        minHeight: 150,
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {previewSrc ? (
+        <img
+          src={previewSrc}
+          alt={label}
+          style={{
+            maxWidth: '100%',
+            maxHeight: 180,
+            objectFit: 'contain',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        />
+      ) : (
+        <>
+          <Upload size={28} style={{ color: 'var(--text-secondary)', opacity: 0.6 }} />
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+            {label}
+          </span>
+        </>
+      )}
+
+      {file ? (
+        <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}>
+          ✓ {file.name}
+        </span>
+      ) : null}
+
+      <input
+        id={inputId}
+        type="file"
+        accept="image/*"
+        onChange={onFileChange}
+        style={{ display: 'none' }}
+      />
+    </label>
+  );
+}
+
 function ProfilePage() {
   const { user, updateUser } = useAuth();
   const showToast = useToast();
@@ -84,6 +155,10 @@ function ProfilePage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [error, setError] = useState('');
+
+  // CCCD image state
+  const [cccdFrontFile, setCccdFrontFile] = useState(null);
+  const [cccdBackFile, setCccdBackFile] = useState(null);
 
   const availableApartments = useMemo(
     () => apartments.filter((apartment) => apartment.status !== 'INACTIVE'),
@@ -155,18 +230,59 @@ function ProfilePage() {
 
   async function handleRequestSubmit(event) {
     event.preventDefault();
-    setIsSendingRequest(true);
     setError('');
 
+    // Validate CCCD images
+    const hasFront = cccdFrontFile || apartmentRequest?.cccdFrontImage;
+    const hasBack = cccdBackFile || apartmentRequest?.cccdBackImage;
+
+    if (!hasFront) {
+      setError('Vui lòng upload ảnh mặt trước CCCD.');
+      showToast('Vui lòng upload ảnh mặt trước CCCD.', 'error');
+      return;
+    }
+    if (!hasBack) {
+      setError('Vui lòng upload ảnh mặt sau CCCD.');
+      showToast('Vui lòng upload ảnh mặt sau CCCD.', 'error');
+      return;
+    }
+
+    // Must have new files if no existing images
+    if (!cccdFrontFile && !apartmentRequest?.cccdFrontImage) {
+      setError('Vui lòng chọn ảnh mặt trước CCCD.');
+      showToast('Vui lòng chọn ảnh mặt trước CCCD.', 'error');
+      return;
+    }
+    if (!cccdBackFile && !apartmentRequest?.cccdBackImage) {
+      setError('Vui lòng chọn ảnh mặt sau CCCD.');
+      showToast('Vui lòng chọn ảnh mặt sau CCCD.', 'error');
+      return;
+    }
+
+    setIsSendingRequest(true);
+
     try {
-      const payload = {
-        ...requestForm,
-        apartmentId: Number(requestForm.apartmentId),
-        dateOfBirth: requestForm.dateOfBirth || null,
-      };
-      const created = await requestApartmentJoin(payload);
+      const formData = new FormData();
+      formData.append('apartmentId', requestForm.apartmentId);
+      if (requestForm.identityNumber) formData.append('identityNumber', requestForm.identityNumber);
+      if (requestForm.phoneNumber) formData.append('phoneNumber', requestForm.phoneNumber);
+      if (requestForm.dateOfBirth) formData.append('dateOfBirth', requestForm.dateOfBirth);
+      if (requestForm.gender) formData.append('gender', requestForm.gender);
+      formData.append('relationshipType', requestForm.relationshipType || 'OTHER');
+
+      // Always require new files for upload
+      if (cccdFrontFile) {
+        formData.append('cccdFront', cccdFrontFile);
+      }
+      if (cccdBackFile) {
+        formData.append('cccdBack', cccdBackFile);
+      }
+
+      const created = await requestApartmentJoin(formData);
       setApartmentRequest(created);
       setRequestForm(requestToForm(created));
+      setCccdFrontFile(null);
+      setCccdBackFile(null);
       showToast('Đã gửi yêu cầu căn hộ, vui lòng chờ admin duyệt.', 'success');
     } catch (apiError) {
       const message = apiError.message || 'Không gửi được yêu cầu căn hộ.';
@@ -371,6 +487,35 @@ function ProfilePage() {
                 <option value="OTHER">Khác</option>
               </select>
             </label>
+
+            {/* CCCD Image Upload Section */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <CreditCard size={16} color="var(--accent)" />
+                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                  Ảnh CCCD / Căn cước công dân <span style={{ color: 'var(--danger)' }}>*</span>
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <CccdUploadCard
+                  label="Mặt trước CCCD"
+                  file={cccdFrontFile}
+                  onFileChange={(e) => setCccdFrontFile(e.target.files[0] || null)}
+                  existingUrl={cccdImageUrl(apartmentRequest?.cccdFrontImage)}
+                  inputId="cccd-front-input"
+                />
+                <CccdUploadCard
+                  label="Mặt sau CCCD"
+                  file={cccdBackFile}
+                  onFileChange={(e) => setCccdBackFile(e.target.files[0] || null)}
+                  existingUrl={cccdImageUrl(apartmentRequest?.cccdBackImage)}
+                  inputId="cccd-back-input"
+                />
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Vui lòng upload rõ nét ảnh mặt trước và mặt sau CCCD để được phê duyệt.
+              </p>
+            </div>
 
             <button
               className="primary-button"

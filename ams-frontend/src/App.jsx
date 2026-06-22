@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 import {
   Building2,
+  Car,
   ClipboardCheck,
   CreditCard,
   FileCheck,
@@ -45,6 +46,8 @@ import ProfilePage from './features/profile/pages/ProfilePage';
 import ResidentReportsPage from './features/reports/pages/ResidentReportsPage';
 import ReportsPage from './features/reports/pages/ReportsPage';
 import AnnouncementsPage from './features/announcements/pages/AnnouncementsPage';
+import ChatWidget from './features/chat/components/ChatWidget';
+import VehiclesPage from './features/vehicles/pages/VehiclesPage';
 
 /** Danh sách nav items cho ADMIN và STAFF */
 const adminStaffNavItems = [
@@ -52,6 +55,7 @@ const adminStaffNavItems = [
   { to: '/announcements', label: 'Bảng tin', icon: Megaphone },
   { to: '/apartments', label: 'Căn hộ', icon: Building2 },
   { to: '/residents', label: 'Cư dân', icon: Users },
+  { to: '/vehicles', label: 'Phương tiện', icon: Car },
   { to: '/fees', label: 'Khoản thu', icon: Receipt },
   { to: '/payments', label: 'Thanh toán', icon: CreditCard },
   { to: '/reports', label: 'Ý kiến cư dân', icon: MessageSquare },
@@ -132,53 +136,56 @@ function AppLayout() {
   }, [sidebarOpen]);
 
   return (
-    <main className="app-shell">
-      <Sidebar
-        navItems={navItems}
-        displayName={displayName}
-        role={role}
-        sidebarOpen={sidebarOpen}
-        onClose={closeSidebar}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onLogout={logout}
-      />
-
-      <div className="content-shell">
-        <AppHeader
+    <>
+      <main className="app-shell">
+        <Sidebar
+          navItems={navItems}
           displayName={displayName}
+          role={role}
           sidebarOpen={sidebarOpen}
-          onToggleSidebar={toggleSidebar}
+          onClose={closeSidebar}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onLogout={logout}
         />
-        <section className="content">
-          {isResident ? (
-            <Routes>
-              <Route element={<ResidentDashboardPage />} index />
-              <Route element={<AnnouncementsPage />} path="announcements" />
-              <Route element={<ProfilePage />} path="profile" />
-              <Route element={<FeesPage role={role} />} path="my-fees" />
-              <Route element={<PaymentsPage role={role} />} path="my-payments" />
-              <Route element={<ResidentReportsPage />} path="my-reports" />
-              <Route element={<Navigate replace to="/" />} path="*" />
-            </Routes>
-          ) : (
-            <Routes>
-              <Route element={<DashboardPage />} index />
-              <Route element={<AnnouncementsPage />} path="announcements" />
-              <Route element={<ApartmentsPage />} path="apartments" />
-              <Route element={<ResidentsPage />} path="residents" />
-              <Route element={<ApprovalsPage />} path="approvals" />
-              <Route element={<FeesPage role={role} />} path="fees" />
-              <Route element={<FeesByApartmentPage />} path="fees-by-apartment" />
-              <Route element={<PaymentsPage role={role} />} path="payments" />
-              <Route element={<PaymentApprovalsPage />} path="payment-approvals" />
-              <Route element={<ReportsPage />} path="reports" />
-              <Route element={<Navigate replace to="/" />} path="*" />
-            </Routes>
-          )}
-        </section>
-      </div>
-    </main>
+        <div className="content-shell">
+          <AppHeader
+            displayName={displayName}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={toggleSidebar}
+          />
+          <section className="content">
+            {isResident ? (
+              <Routes>
+                <Route element={<ResidentDashboardPage />} index />
+                <Route element={<AnnouncementsPage />} path="announcements" />
+                <Route element={<ProfilePage />} path="profile" />
+                <Route element={<FeesPage role={role} />} path="my-fees" />
+                <Route element={<PaymentsPage role={role} />} path="my-payments" />
+                <Route element={<ResidentReportsPage />} path="my-reports" />
+                <Route element={<Navigate replace to="/" />} path="*" />
+              </Routes>
+            ) : (
+              <Routes>
+                <Route element={<DashboardPage />} index />
+                <Route element={<AnnouncementsPage />} path="announcements" />
+                <Route element={<ApartmentsPage />} path="apartments" />
+                <Route element={<ResidentsPage />} path="residents" />
+                <Route element={<VehiclesPage />} path="vehicles" />
+                <Route element={<ApprovalsPage />} path="approvals" />
+                <Route element={<FeesPage role={role} />} path="fees" />
+                <Route element={<FeesByApartmentPage />} path="fees-by-apartment" />
+                <Route element={<PaymentsPage role={role} />} path="payments" />
+                <Route element={<PaymentApprovalsPage />} path="payment-approvals" />
+                <Route element={<ReportsPage />} path="reports" />
+                <Route element={<Navigate replace to="/" />} path="*" />
+              </Routes>
+            )}
+          </section>
+        </div>
+      </main>
+      <ChatWidget />
+    </>
   );
 }
 

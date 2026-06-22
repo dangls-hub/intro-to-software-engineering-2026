@@ -19,7 +19,7 @@ import { fetchAnnouncements } from '../../announcements/api/announcementsApi';
 const GOLD  = '#c9a96e';
 const TEAL  = '#0b1f28';
 const BEIGE = '#f8f5f0';
-const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
+const SERIF = { fontFamily: "var(--font-display)" };
 
 /* ── Eyebrow styles per section background ── */
 const EYEBROW_DARK  = { color: GOLD,            fontSize: '0.73rem', fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '7px' };
@@ -284,7 +284,7 @@ function ResidentDashboardPage() {
           ══════════════════════════════════════════════ */}
       <section
         className="db-section"
-        style={{ paddingTop: '12px', paddingBottom: '52px' }}
+        style={{ paddingTop: '12px', paddingBottom: '20px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>

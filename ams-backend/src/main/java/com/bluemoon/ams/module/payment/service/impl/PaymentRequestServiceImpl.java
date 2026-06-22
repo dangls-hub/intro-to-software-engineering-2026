@@ -14,8 +14,11 @@ import com.bluemoon.ams.module.payment.repository.PaymentRequestRepository;
 import com.bluemoon.ams.module.payment.repository.PaymentRepository;
 import com.bluemoon.ams.module.payment.service.PaymentRequestService;
 import com.bluemoon.ams.module.payment.service.PaymentService;
+import com.bluemoon.ams.module.notification.service.NotificationService;
+import com.bluemoon.ams.common.service.BlueMoonEmailService;
+import com.bluemoon.ams.module.auth.entity.Role;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,20 +31,30 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PaymentRequestServiceImpl implements PaymentRequestService {
 
-    private final PaymentRequestRepository paymentRequestRepository;
-    private final PaymentRepository paymentRepository;
-    private final FeeRepository feeRepository;
-    private final UserRepository userRepository;
-    private final PaymentRequestMapper paymentRequestMapper;
-    private final PaymentService paymentService;
+    @Autowired
+    private PaymentRequestRepository paymentRequestRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private FeeRepository feeRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PaymentRequestMapper paymentRequestMapper;
+    @Autowired
+    private PaymentService paymentService;
+    @Autowired
+    private NotificationService notificationService;
+    @Autowired
+    private BlueMoonEmailService blueMoonEmailService;
 
     @Value("${app.upload.proof-dir:uploads/proofs}")
     private String proofUploadDir;
@@ -88,6 +101,19 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
                 .build();
 
         request = paymentRequestRepository.save(request);
+
+        // Send notification to all ADMIN users
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createAndSendNotification(
+                    admin.getId(),
+                    submitter.getId(),
+                    "NEW_PAYMENT_REQUEST",
+                    "Có một yêu cầu duyệt thanh toán phí " + fee.getName() + " mới từ cư dân.",
+                    "/payment-approvals"
+            );
+        }
+
         return paymentRequestMapper.toResponse(request);
     }
 
@@ -162,6 +188,28 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
 
         paymentService.recordPayment(paymentDto, reviewerUsername);
 
+        // Send notification to submitter
+        if (request.getSubmittedBy() != null) {
+            notificationService.createAndSendNotification(
+                    request.getSubmittedBy().getId(),
+                    reviewer.getId(),
+                    "PAYMENT_REQUEST_APPROVED",
+                    "Yêu cầu thanh toán của bạn cho khoản phí " + request.getFee().getName() + " đã được phê duyệt.",
+                    "/my-fees"
+            );
+
+            // Email xác nhận thanh toán cho người gửi (nếu có email). Chạy @Async, lỗi gửi mail không ảnh hưởng giao dịch.
+            User submitter = request.getSubmittedBy();
+            String submitterEmail = submitter.getEmail();
+            if (submitterEmail != null && !submitterEmail.isBlank()) {
+                String paidAt = request.getReviewedAt() != null
+                        ? request.getReviewedAt().format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"))
+                        : "";
+                blueMoonEmailService.sendPaymentConfirmation(
+                        submitterEmail, submitter.getFullName(), request.getAmount(), paidAt);
+            }
+        }
+
         return paymentRequestMapper.toResponse(request);
     }
 
@@ -183,6 +231,25 @@ public class PaymentRequestServiceImpl implements PaymentRequestService {
         request.setReviewNote(reviewNote);
         request.setReviewedAt(LocalDateTime.now());
         paymentRequestRepository.save(request);
+
+        // Send notification to submitter
+        if (request.getSubmittedBy() != null) {
+            notificationService.createAndSendNotification(
+                    request.getSubmittedBy().getId(),
+                    reviewer.getId(),
+                    "PAYMENT_REQUEST_REJECTED",
+                    "Yêu cầu thanh toán của bạn cho khoản phí " + request.getFee().getName() + " đã bị từ chối.",
+                    "/my-fees"
+            );
+
+            // Email thông báo từ chối (kèm lý do) cho người gửi nếu có email. Chạy @Async, không ảnh hưởng giao dịch.
+            User submitter = request.getSubmittedBy();
+            String submitterEmail = submitter.getEmail();
+            if (submitterEmail != null && !submitterEmail.isBlank()) {
+                blueMoonEmailService.sendPaymentRejection(
+                        submitterEmail, submitter.getFullName(), request.getFee().getName(), reviewNote);
+            }
+        }
 
         return paymentRequestMapper.toResponse(request);
     }

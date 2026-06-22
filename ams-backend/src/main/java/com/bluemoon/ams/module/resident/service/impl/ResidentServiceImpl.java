@@ -14,11 +14,14 @@ import com.bluemoon.ams.module.resident.entity.Household;
 import com.bluemoon.ams.module.resident.entity.Resident;
 import com.bluemoon.ams.module.resident.entity.ResidentStatus;
 import com.bluemoon.ams.module.resident.mapper.ResidentMapper;
+import java.util.List;
 import com.bluemoon.ams.module.resident.repository.HouseholdRepository;
 import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 import com.bluemoon.ams.module.resident.service.ResidentService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -26,19 +29,39 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ResidentServiceImpl implements ResidentService {
+
+    private static final Logger log = LoggerFactory.getLogger(ResidentServiceImpl.class);
+
 // Chứa nghiệp vụ xử lý của dân cư: tạo, cập nhật, xoá, lấy thông tin, ...
-    private final ResidentRepository residentRepository;
-    private final HouseholdRepository householdRepository;
-    private final ApartmentRepository apartmentRepository;
-    private final UserRepository userRepository;
-    private final ResidentMapper residentMapper;
+    @Autowired
+    private ResidentRepository residentRepository;
+    @Autowired
+    private HouseholdRepository householdRepository;
+    @Autowired
+    private ApartmentRepository apartmentRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ResidentMapper residentMapper;
+    @Autowired
+    private com.bluemoon.ams.module.notification.service.NotificationService notificationService;
+    @Autowired
+    private com.bluemoon.ams.common.service.BlueMoonEmailService blueMoonEmailService;
+
+    @Value("${app.upload.cccd-dir:uploads/cccd}")
+    private String cccdUploadDir;
 
     @Override
     @Transactional(readOnly = true)
@@ -166,7 +189,16 @@ public class ResidentServiceImpl implements ResidentService {
 
     @Override
     @Transactional
-    public ResidentResponse requestApartmentJoin(String username, ApartmentJoinRequest request) {
+    public ResidentResponse requestApartmentJoin(String username, ApartmentJoinRequest request,
+                                                  MultipartFile cccdFront, MultipartFile cccdBack) {
+        // Validate CCCD images are provided
+        if (cccdFront == null || cccdFront.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng upload ảnh mặt trước CCCD");
+        }
+        if (cccdBack == null || cccdBack.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng upload ảnh mặt sau CCCD");
+        }
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 
@@ -178,12 +210,13 @@ public class ResidentServiceImpl implements ResidentService {
         }
 
         Apartment apartment = resolveApartment(request.getApartmentId());
-        Resident resident = residentRepository
-                .findFirstByUserAndApprovalStatusOrderByCreatedAtDesc(user, ApprovalStatus.PENDING)
-                .or(() -> residentRepository.findFirstByUserIsNullAndFullNameAndApprovalStatusOrderByCreatedAtDesc(user.getFullName(), ApprovalStatus.PENDING))
-                .orElseGet(Resident::new);
+        Resident resident = findMostRelevantResident(user).orElseGet(Resident::new);
 
         validateIdentityUnique(request.getIdentityNumber(), resident.getId());
+
+        // Save CCCD images
+        String frontImagePath = saveCccdImage(cccdFront, "front");
+        String backImagePath = saveCccdImage(cccdBack, "back");
 
         resident.setUser(user);
         resident.setFullName(user.getFullName());
@@ -199,9 +232,24 @@ public class ResidentServiceImpl implements ResidentService {
         resident.setApprovedByUser(null);
         resident.setApprovedAt(null);
         resident.setRejectReason(null);
+        resident.setCccdFrontImage(frontImagePath);
+        resident.setCccdBackImage(backImagePath);
 
         Resident saved = residentRepository.save(resident);
         log.info("Cư dân {} gửi yêu cầu vào căn hộ {}", username, apartment.getRoomNumber());
+
+        // Notify admins
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createAndSendNotification(
+                    admin.getId(),
+                    user.getId(),
+                    "NEW_RESIDENT_REQUEST",
+                    "Cư dân " + user.getFullName() + " yêu cầu gia nhập căn hộ " + apartment.getRoomNumber() + ".",
+                    "/approvals"
+            );
+        }
+
         return residentMapper.toResponse(saved);
     }
 
@@ -242,6 +290,29 @@ public class ResidentServiceImpl implements ResidentService {
 
         resident = residentRepository.save(resident);
         log.info("Phê duyệt cư dân ID={} bởi {}", id, approverUsername);
+
+        // Notify resident
+        if (resident.getUser() != null) {
+            notificationService.createAndSendNotification(
+                    resident.getUser().getId(),
+                    resident.getApprovedByUser() != null ? resident.getApprovedByUser().getId() : null,
+                    "RESIDENT_REQUEST_APPROVED",
+                    "Yêu cầu gia nhập căn hộ của bạn đã được phê duyệt.",
+                    "/profile"
+            );
+
+            // Email chào mừng cư dân (nếu tài khoản có email). Chạy @Async, không ảnh hưởng giao dịch.
+            String email = resident.getUser().getEmail();
+            if (email != null && !email.isBlank()) {
+                String apartmentNo = resident.getApartment() != null
+                        ? resident.getApartment().getRoomNumber()
+                        : (resident.getHousehold() != null && resident.getHousehold().getApartment() != null
+                            ? resident.getHousehold().getApartment().getRoomNumber() : "");
+                blueMoonEmailService.sendWelcomeEmail(
+                        email, resident.getFullName(), apartmentNo, "http://localhost:5173/login");
+            }
+        }
+
         return residentMapper.toResponse(resident);
     }
 
@@ -264,6 +335,18 @@ public class ResidentServiceImpl implements ResidentService {
 
         resident = residentRepository.save(resident);
         log.info("Từ chối cư dân ID={} bởi {} lý do: {}", id, approverUsername, reason);
+
+        // Notify resident
+        if (resident.getUser() != null) {
+            notificationService.createAndSendNotification(
+                    resident.getUser().getId(),
+                    resident.getApprovedByUser() != null ? resident.getApprovedByUser().getId() : null,
+                    "RESIDENT_REQUEST_REJECTED",
+                    "Yêu cầu gia nhập căn hộ của bạn đã bị từ chối. Lý do: " + reason,
+                    "/profile"
+            );
+        }
+
         return residentMapper.toResponse(resident);
     }
 
@@ -343,6 +426,32 @@ public class ResidentServiceImpl implements ResidentService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * Lưu ảnh CCCD vào thư mục uploads/cccd
+     */
+    private String saveCccdImage(MultipartFile file, String side) {
+        try {
+            Path uploadPath = Paths.get(cccdUploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            }
+            String filename = UUID.randomUUID() + "_" + side + extension;
+
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return filePath.toString().replace("\\", "/");
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể lưu ảnh CCCD: " + e.getMessage(), e);
+        }
     }
 
     /**

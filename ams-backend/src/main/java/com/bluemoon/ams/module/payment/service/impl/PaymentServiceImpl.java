@@ -11,22 +11,38 @@ import com.bluemoon.ams.module.payment.entity.Payment;
 import com.bluemoon.ams.module.payment.mapper.PaymentMapper;
 import com.bluemoon.ams.module.payment.repository.PaymentRepository;
 import com.bluemoon.ams.module.payment.service.PaymentService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.bluemoon.ams.module.notification.service.NotificationService;
+import com.bluemoon.ams.module.resident.entity.Household;
+import com.bluemoon.ams.module.resident.entity.Resident;
+import com.bluemoon.ams.module.resident.repository.HouseholdRepository;
+import com.bluemoon.ams.module.resident.repository.ResidentRepository;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-    private final PaymentRepository paymentRepository;
-    private final FeeRepository feeRepository;
-    private final UserRepository userRepository;
-    private final PaymentMapper paymentMapper;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private FeeRepository feeRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PaymentMapper paymentMapper;
+    @Autowired
+    private NotificationService notificationService;
+    @Autowired
+    private ResidentRepository residentRepository;
+    @Autowired
+    private HouseholdRepository householdRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -98,6 +114,31 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal newTotal = totalPaid.add(request.getAmount());
         fee.setStatus(newTotal.compareTo(fee.getAmount()) >= 0 ? "PAID" : "PARTIAL");
         feeRepository.save(fee);
+
+        // Send notification to residents
+        if (fee.getApartmentId() != null) {
+            Set<Long> userIds = new HashSet<>();
+            List<Resident> residents = residentRepository.findByApartmentId(fee.getApartmentId());
+            for (Resident r : residents) {
+                if (r.getUser() != null) userIds.add(r.getUser().getId());
+            }
+            List<Household> households = householdRepository.findByApartmentId(fee.getApartmentId());
+            for (Household h : households) {
+                List<Resident> hResidents = residentRepository.findByHouseholdId(h.getId());
+                for (Resident r : hResidents) {
+                    if (r.getUser() != null) userIds.add(r.getUser().getId());
+                }
+            }
+            for (Long uid : userIds) {
+                notificationService.createAndSendNotification(
+                        uid,
+                        staff.getId(),
+                        "NEW_PAYMENT",
+                        "Giao dịch thành công: Khoản phí " + fee.getName() + " đã được thanh toán " + request.getAmount() + " VNĐ.",
+                        "/my-fees"
+                );
+            }
+        }
 
         return paymentMapper.toResponse(payment);
     }

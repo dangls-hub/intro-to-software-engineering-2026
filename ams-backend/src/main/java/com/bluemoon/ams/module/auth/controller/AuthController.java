@@ -5,8 +5,9 @@ import com.bluemoon.ams.module.auth.dto.*;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.service.AuthService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,11 +22,14 @@ import com.bluemoon.ams.module.resident.repository.ResidentRepository;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
-@Slf4j
 public class AuthController {
-    private final AuthService authService;
-    private final ResidentRepository residentRepository;
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    @Autowired
+    private AuthService authService;
+    @Autowired
+    private ResidentRepository residentRepository;
 
     /**
      * API đăng nhập
@@ -77,6 +81,53 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.ok("Đặt lại mật khẩu thành công", null));
+    }
+
+    /**
+     * API gửi mã OTP tới email (xác thực đăng nhập/giao dịch)
+     * POST /api/v1/auth/otp/send
+     */
+    @PostMapping("/otp/send")
+    public ResponseEntity<ApiResponse<String>> sendOtp(@Valid @RequestBody OtpSendRequest request) {
+        authService.sendOtp(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("Mã OTP đã được gửi tới email của bạn.", null));
+    }
+
+    /**
+     * API xác thực mã OTP
+     * POST /api/v1/auth/otp/verify
+     */
+    @PostMapping("/otp/verify")
+    public ResponseEntity<ApiResponse<Boolean>> verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
+        boolean valid = authService.verifyOtp(request.getEmail(), request.getOtp());
+        if (!valid) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mã OTP không đúng hoặc đã hết hạn."));
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Xác thực OTP thành công.", Boolean.TRUE));
+    }
+
+    /* ── OTP request DTOs ───────────────────────────── */
+
+    public static class OtpSendRequest {
+        @jakarta.validation.constraints.NotBlank(message = "Email không được để trống")
+        @jakarta.validation.constraints.Email(message = "Email không hợp lệ")
+        private String email;
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+    }
+
+    public static class OtpVerifyRequest {
+        @jakarta.validation.constraints.NotBlank(message = "Email không được để trống")
+        @jakarta.validation.constraints.Email(message = "Email không hợp lệ")
+        private String email;
+        @jakarta.validation.constraints.NotBlank(message = "Mã OTP không được để trống")
+        private String otp;
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getOtp() { return otp; }
+        public void setOtp(String otp) { this.otp = otp; }
     }
 
     /**
@@ -133,6 +184,15 @@ public class AuthController {
         UserInfoResponse response = buildUserInfoResponse(user);
 
         return ResponseEntity.ok(ApiResponse.ok("Lấy thông tin user thành công", response));
+    }
+
+    /**
+     * API lấy danh sách toàn bộ username trong hệ thống để dùng cho chức năng Mention (@)
+     * GET /api/v1/auth/users/usernames
+     */
+    @GetMapping("/users/usernames")
+    public ResponseEntity<ApiResponse<java.util.List<String>>> getAllUsernames() {
+        return ResponseEntity.ok(ApiResponse.ok("Lấy danh sách username thành công", authService.getAllUsernames()));
     }
 
     private UserInfoResponse buildUserInfoResponse(User user) {

@@ -3,6 +3,7 @@ package com.bluemoon.ams.module.report.service;
 import com.bluemoon.ams.common.exception.ResourceNotFoundException;
 import com.bluemoon.ams.module.auth.entity.User;
 import com.bluemoon.ams.module.auth.repository.UserRepository;
+import com.bluemoon.ams.module.notification.service.NotificationService;
 import com.bluemoon.ams.module.report.dto.ReportRequest;
 import com.bluemoon.ams.module.report.dto.ReportResponse;
 import com.bluemoon.ams.module.report.dto.ReviewReportRequest;
@@ -37,6 +38,9 @@ public class ResidentReportServiceTest {
 
     @Mock
     private ReportMapper reportMapper;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ResidentReportService reportService;
