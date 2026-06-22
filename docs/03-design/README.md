@@ -9,7 +9,7 @@ Tài liệu này mô tả thiết kế kiến trúc cho BlueMoon AMS dựa trên
 BlueMoon AMS là hệ thống quản lý chung cư, tập trung vào các nghiệp vụ quản lý cư dân, căn hộ, khoản thu và thanh toán. Kiến trúc được thiết kế để:
 
 - Tách rõ giao diện, xử lý nghiệp vụ và lưu trữ dữ liệu.
-- Dễ mở rộng theo từng module nghiệp vụ như `resident`, `apartment`, `fee`, `payment`, `auth`.
+- Dễ mở rộng theo từng module nghiệp vụ như `resident`, `apartment`, `fee`, `payment`, `auth`, `chat`, `announcement`, `notification`, `report`, `vehicle`.
 - Dễ kiểm thử vì mỗi tầng có trách nhiệm riêng.
 - Phù hợp với repo hiện tại gồm `ams-frontend`, `ams-backend`, `database`, `deployment` và `docs`.
 
@@ -57,6 +57,11 @@ flowchart LR
 | Cư dân | `features/residents` | `module/resident/controller` | `module/resident/service` | `Resident`, `Household` |
 | Khoản thu | `features/fees` | `module/fee/controller` | `module/fee/service` | `Fee`, `FeeType` |
 | Thanh toán | `features/payments` | `module/payment/controller` | `module/payment/service` | `Payment` |
+| Chat | `features/chat` | `module/chat/controller` | `module/chat/service` | `ChatMessage`, `ChatReaction` |
+| Thông báo | `features/announcements` | `module/announcement/controller` | `module/announcement/service` | `Announcement` |
+| Phương tiện | `features/vehicles` | `module/vehicle/controller` | `module/vehicle/service` | `Vehicle` |
+| Phản ánh | `features/reports` | `module/report/controller` | `module/report/service` | `Report` |
+| Hồ sơ cư dân | `features/profile` | `module/resident/controller` | `module/resident/service` | `Resident` |
 
 ### Luồng xử lý use case
 
@@ -126,15 +131,22 @@ src/
     apartments/
     fees/
     payments/
+    chat/                # ChatWidget, useChat hook
+    announcements/       # Thông báo và sự kiện
+    vehicles/            # Quản lý phương tiện
+    profile/             # Trang cá nhân cư dân
+    reports/             # Phản ánh cư dân
 ```
 
 Nguyên tắc thiết kế frontend:
 
 - Mỗi feature chứa `pages`, `components` và `api` riêng.
-- `App.jsx` định nghĩa layout chính, sidebar và route.
+- `App.jsx` định nghĩa layout chính, sidebar và route. Tích hợp `ChatWidget` hiển thị trên tất cả trang.
 - `apiClient.js` quản lý base URL, token và cách gửi request.
 - Các trang chỉ điều phối trạng thái giao diện và gọi API; không chứa nghiệp vụ backend.
-- Các module `fees` và `payments` đã có vị trí điều hướng, sẵn sàng hoàn thiện khi API backend tương ứng được triển khai.
+- Hệ thống có hai bộ route: một cho Admin/Staff và một cho Resident, điều hướng tự động theo role.
+- Module `chat` sử dụng WebSocket (SockJS + STOMP) để gửi/nhận tin nhắn real-time.
+- Module `profile` cho phép cư dân xem thông tin cá nhân và upload ảnh CCCD khi xin vào căn hộ.
 
 ### Thiết kế dữ liệu mức kiến trúc
 
@@ -215,6 +227,29 @@ erDiagram
     APARTMENT ||--o{ FEE : receives
     FEE_TYPE ||--o{ FEE : classifies
     FEE ||--o{ PAYMENT : paid_by
+
+    CHAT_MESSAGE {
+        bigint id PK
+        string content
+        string senderName
+        string senderRole
+        string type
+        string mediaUrl
+        datetime timestamp
+        bigint replyToId
+        string replyToContent
+        string replyToSender
+    }
+
+    CHAT_REACTION {
+        bigint id PK
+        bigint messageId FK
+        string username
+        string emoji
+        datetime timestamp
+    }
+
+    CHAT_MESSAGE ||--o{ CHAT_REACTION : has
 ```
 
 ### API contract dự kiến
@@ -224,6 +259,7 @@ erDiagram
 | Health | GET | `/api/v1/health` | Kiểm tra backend đang chạy |
 | Auth | POST | `/api/v1/auth/login` | Đăng nhập và nhận JWT |
 | Auth | GET | `/api/v1/auth/me` | Lấy thông tin người dùng hiện tại |
+| Auth | GET | `/api/v1/auth/users/usernames` | Lấy danh sách username (cho chức năng mention) |
 | Apartments | GET | `/api/v1/apartments` | Lấy danh sách căn hộ |
 | Apartments | POST | `/api/v1/apartments` | Tạo căn hộ |
 | Apartments | GET | `/api/v1/apartments/{id}` | Xem chi tiết căn hộ |
@@ -234,10 +270,15 @@ erDiagram
 | Residents | GET | `/api/v1/residents/{id}` | Xem chi tiết cư dân |
 | Residents | PUT | `/api/v1/residents/{id}` | Cập nhật cư dân |
 | Residents | DELETE | `/api/v1/residents/{id}` | Xóa hoặc vô hiệu hóa cư dân |
+| Residents | POST | `/api/v1/resident-self/request-join` | Cư dân xin vào căn hộ (kèm upload CCCD) |
 | Fees | GET | `/api/v1/fees` | Lấy danh sách khoản thu |
 | Fees | POST | `/api/v1/fees` | Tạo khoản thu |
 | Payments | GET | `/api/v1/payments` | Lấy danh sách thanh toán |
 | Payments | POST | `/api/v1/payments` | Ghi nhận thanh toán |
+| Chat | GET | `/api/v1/chat/history` | Lấy lịch sử tin nhắn |
+| Chat | POST | `/api/v1/chat/send` | Gửi tin nhắn |
+| Chat | POST | `/api/v1/chat/react` | Thêm emoji reaction |
+| Chat | POST | `/api/v1/chat/media/upload` | Upload file/ảnh trong chat |
 
 ### Quy ước response
 

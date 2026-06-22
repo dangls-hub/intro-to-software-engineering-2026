@@ -8,35 +8,48 @@ intro-to-software-engineering-2026/
 |   |-- src/main/java/com/bluemoon/ams/
 |   |   |-- controller/            # Controller hiện có, ví dụ HealthController
 |   |   |-- common/                # Thành phần dùng chung
-|   |   |   |-- config/
+|   |   |   |-- config/            # SecurityConfig, WebMvcConfig, ...
 |   |   |   |-- exception/
 |   |   |   |-- response/
 |   |   |   |-- security/
+|   |   |   |-- service/           # EmailService, BlueMoonEmailService
 |   |   |   `-- util/
 |   |   `-- module/                # Nghiệp vụ chính, chia theo miền chức năng
+|   |       |-- admin/
+|   |       |-- announcement/
 |   |       |-- apartment/
 |   |       |-- auth/
+|   |       |-- chat/              # Chat real-time, reactions, file sharing
+|   |       |-- dashboard/
 |   |       |-- fee/
+|   |       |-- notification/
 |   |       |-- payment/
-|   |       `-- resident/
+|   |       |-- report/
+|   |       |-- resident/          # Quản lý cư dân, upload CCCD
+|   |       `-- vehicle/
 |   |-- src/main/resources/
-|   |   |-- db/migration/          # Migration cơ sở dữ liệu
+|   |   |-- db/migration/          # Migration cơ sở dữ liệu (Flyway)
 |   |   `-- static/assets/         # Tài nguyên tĩnh nếu backend cần phục vụ
 |   `-- src/test/                  # Kiểm thử đơn vị và kiểm thử tích hợp backend
 |-- ams-frontend/                 # Frontend React/Vite
-|   |-- public/                    # Tệp tĩnh public
+|   |-- public/                    # Tệp tĩnh public (favicon, ...)
 |   |-- src/
 |   |   |-- assets/                # Ảnh, icon, media dùng trong giao diện
 |   |   |-- components/            # Component dùng chung
 |   |   |   |-- layout/
 |   |   |   `-- ui/
 |   |   |-- features/              # Màn hình và logic theo nghiệp vụ
+|   |   |   |-- announcements/     # Thông báo, sự kiện
 |   |   |   |-- apartments/
 |   |   |   |-- auth/
+|   |   |   |-- chat/              # ChatWidget, useChat hook
 |   |   |   |-- dashboard/
 |   |   |   |-- fees/
 |   |   |   |-- payments/
-|   |   |   `-- residents/
+|   |   |   |-- profile/           # Trang thông tin cá nhân cư dân
+|   |   |   |-- reports/           # Báo cáo, phản ánh cư dân
+|   |   |   |-- residents/
+|   |   |   `-- vehicles/          # Quản lý phương tiện
 |   |   |-- hooks/
 |   |   |-- lib/
 |   |   |-- routes/

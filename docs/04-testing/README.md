@@ -11,11 +11,16 @@
 
 | Nhóm | Nội dung |
 |---|---|
-| Auth | Đăng nhập đúng/sai, token thiếu hoặc hết hạn |
+| Auth | Đăng nhập đúng/sai, token thiếu hoặc hết hạn, Google OAuth |
 | Apartment | CRUD căn hộ, validate mã căn hộ, trạng thái căn hộ |
-| Resident | CRUD cư dân, validate thông tin định danh, liên kết căn hộ |
+| Resident | CRUD cư dân, validate thông tin định danh, liên kết căn hộ, upload CCCD |
 | Fee | Tạo khoản thu, xem danh sách, cập nhật trạng thái |
 | Payment | Ghi nhận thanh toán, cập nhật trạng thái khoản thu |
+| Chat | Gửi tin nhắn, nhận tin real-time, gửi file/ảnh, emoji reactions, reply |
+| Announcement | Tạo, xem, cập nhật thông báo |
+| Vehicle | Đăng ký, xem, cập nhật phương tiện |
+| Report | Cư dân gửi phản ánh, admin/staff xử lý |
+| Resident Portal | Cư dân xem khoản thu, thanh toán, profile |
 | Frontend | Routing, form, loading, error, responsive |
 | Deployment | Chạy database, backend, frontend theo hướng dẫn |
 
@@ -42,6 +47,14 @@
 | TC-10 | Frontend loading/error | Tắt backend rồi thao tác gọi API | UI hiển thị lỗi, không trắng màn hình |
 | TC-11 | Responsive | Mở giao diện trên màn hình nhỏ | Nội dung không tràn, thao tác chính vẫn dùng được |
 | TC-12 | Demo end-to-end | Chạy toàn bộ kịch bản demo | Không gặp lỗi chặn luồng |
+| TC-13 | Upload CCCD | Cư dân upload ảnh CCCD mặt trước/sau khi xin vào căn hộ | Ảnh được lưu, yêu cầu chuyển sang PENDING |
+| TC-14 | Phê duyệt cư dân | Admin phê duyệt/từ chối yêu cầu vào căn hộ | Trạng thái cư dân thay đổi đúng |
+| TC-15 | Chat gửi tin nhắn | Gửi tin nhắn trong chat | Tin nhắn hiển thị real-time cho các user khác |
+| TC-16 | Chat gửi file | Upload file/ảnh trong chat | File được lưu và hiển thị đúng |
+| TC-17 | Chat reaction | Thêm emoji reaction vào tin nhắn | Reaction hiển thị đúng, toggle on/off |
+| TC-18 | Thông báo | Tạo thông báo cho cư dân | Thông báo xuất hiện trên cổng cư dân |
+| TC-19 | Quản lý phương tiện | Đăng ký phương tiện cho cư dân | Phương tiện xuất hiện trong danh sách |
+| TC-20 | Phản ánh cư dân | Cư dân gửi phản ánh | Phản ánh lưu thành công, admin/staff xem được |
 
 ## Checklist trước demo
 
