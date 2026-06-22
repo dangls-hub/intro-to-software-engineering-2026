@@ -31,9 +31,11 @@ Tài liệu này trình bày thiết kế dữ liệu cho ba bảng chính: `use
 | 8 | `email` | `VARCHAR(100)` |  | Email liên hệ |
 | 9 | `relation_to_owner` | `VARCHAR(50)` |  | Quan hệ với chủ hộ, ví dụ: chủ hộ, vợ/chồng, con, người thuê |
 | 10 | `is_owner` | `BOOLEAN` | Not Null | Đánh dấu cư dân có phải chủ hộ hay không |
-| 11 | `status` | `VARCHAR(20)` | Not Null | Trạng thái cư trú, ví dụ: `ACTIVE`, `MOVED_OUT`, `TEMPORARY` |
-| 12 | `created_at` | `DATETIME` | Not Null | Thời điểm thêm cư dân |
-| 13 | `updated_at` | `DATETIME` |  | Thời điểm cập nhật gần nhất |
+| 11 | `status` | `VARCHAR(20)` | Not Null | Trạng thái cư trú, ví dụ: `ACTIVE`, `MOVED_OUT`, `TEMPORARY`, `PENDING` |
+| 12 | `cccd_front_image` | `VARCHAR(500)` |  | Đường dẫn ảnh CCCD mặt trước |
+| 13 | `cccd_back_image` | `VARCHAR(500)` |  | Đường dẫn ảnh CCCD mặt sau |
+| 14 | `created_at` | `DATETIME` | Not Null | Thời điểm thêm cư dân |
+| 15 | `updated_at` | `DATETIME` |  | Thời điểm cập nhật gần nhất |
 
 ## Bảng `apartments`
 
@@ -57,3 +59,29 @@ Tài liệu này trình bày thiết kế dữ liệu cho ba bảng chính: `use
 | `apartments.id` -> `residents.apartment_id` | Một căn hộ có thể có nhiều cư dân |
 | `residents.id` -> `apartments.owner_resident_id` | Một cư dân có thể được gán là chủ hộ của căn hộ |
 | `users` | Bảng tài khoản hệ thống, độc lập với dữ liệu cư dân trong phạm vi thiết kế hiện tại |
+| `chat_messages.id` -> `chat_reactions.message_id` | Một tin nhắn có thể có nhiều reactions |
+
+## Bảng `chat_messages`
+
+| STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả |
+|---:|---|---|---|---|
+| 1 | `id` | `BIGINT` | Primary Key, Auto Increment | Mã định danh duy nhất của tin nhắn |
+| 2 | `content` | `TEXT` |  | Nội dung tin nhắn |
+| 3 | `sender_name` | `VARCHAR(100)` | Not Null | Tên người gửi |
+| 4 | `sender_role` | `VARCHAR(30)` |  | Role của người gửi |
+| 5 | `type` | `VARCHAR(20)` | Not Null | Loại tin nhắn: `TEXT`, `IMAGE`, `FILE` |
+| 6 | `media_url` | `VARCHAR(500)` |  | Đường dẫn file/ảnh đính kèm |
+| 7 | `timestamp` | `DATETIME` | Not Null | Thời điểm gửi |
+| 8 | `reply_to_id` | `BIGINT` |  | ID tin nhắn được reply |
+| 9 | `reply_to_content` | `TEXT` |  | Nội dung tin nhắn được reply |
+| 10 | `reply_to_sender` | `VARCHAR(100)` |  | Người gửi tin nhắn được reply |
+
+## Bảng `chat_reactions`
+
+| STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả |
+|---:|---|---|---|---|
+| 1 | `id` | `BIGINT` | Primary Key, Auto Increment | Mã định danh duy nhất |
+| 2 | `message_id` | `BIGINT` | Foreign Key, Not Null | ID tin nhắn được react |
+| 3 | `username` | `VARCHAR(100)` | Not Null | Người thực hiện reaction |
+| 4 | `emoji` | `VARCHAR(10)` | Not Null | Emoji reaction |
+| 5 | `timestamp` | `DATETIME` | Not Null | Thời điểm react |

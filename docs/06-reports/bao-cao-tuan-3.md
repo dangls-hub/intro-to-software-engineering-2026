@@ -72,14 +72,21 @@
 
 | Module | Backend | Frontend | Database |
 |---|---|---|---|
-| Authentication (JWT) | ✅ | ✅ | ✅ |
+| Authentication (JWT + Google OAuth) | ✅ | ✅ | ✅ |
 | Apartment Management | ✅ | ✅ | ✅ |
 | Resident & Household | ✅ | ✅ | ✅ |
+| CCCD Upload & Approval | ✅ | ✅ | ✅ |
 | Fee Management | ✅ | ✅ | ✅ |
 | Payment Recording | ✅ | ✅ | ✅ |
 | Dashboard Stats | ✅ | ✅ | — |
+| Chat System (real-time) | ✅ | ✅ | ✅ |
+| Announcements & Events | ✅ | ✅ | ✅ |
+| Vehicle Management | ✅ | ✅ | ✅ |
+| Resident Reports | ✅ | ✅ | ✅ |
+| Resident Portal | ✅ | ✅ | — |
+| Email Notifications | ✅ | — | — |
 
-### Kịch bản demo 7 bước
+### Kịch bản demo 10 bước
 
 1. Đăng nhập bằng tài khoản admin/staff mẫu.
 2. Xem dashboard tổng quan (số căn hộ, cư dân, doanh thu).
@@ -88,14 +95,16 @@
 5. Tạo khoản thu cho căn hộ.
 6. Ghi nhận thanh toán cho khoản thu.
 7. Kiểm tra trạng thái thanh toán đã cập nhật trên frontend.
+8. Đăng nhập bằng tài khoản cư dân, xin vào căn hộ (upload CCCD), admin phê duyệt.
+9. Sử dụng chat: gửi tin nhắn, chia sẻ file, thêm reaction.
+10. Tạo thông báo, đăng ký phương tiện, gửi phản ánh.
 
 ### Thống kê tài liệu
 
 | Tài liệu | Đường dẫn | Trạng thái |
 |---|---|---|
-| Kế hoạch sprint 1-3 | `docs/01-planning/` | ✅ Done |
 | Yêu cầu phần mềm | `docs/02-requirements/` | ✅ Done |
 | Thiết kế hệ thống | `docs/03-design/` | ✅ Done |
-| Checklist kiểm thử | `docs/04-testing/checklist.md` | ✅ Done (chưa điền kết quả) |
+| Checklist kiểm thử | `docs/04-testing/checklist.md` | ✅ Done |
 | Hướng dẫn deployment | `docs/05-deployment/README.md` | ✅ Done |
 | Báo cáo tuần 3 | `docs/06-reports/bao-cao-tuan-3.md` | ✅ Done |

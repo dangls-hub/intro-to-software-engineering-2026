@@ -97,6 +97,44 @@
 
 ---
 
+## Step 8 — Chat System
+
+| # | Action | Expected Result | Pass |
+|---|--------|-----------------|------|
+| 8.1 | Send a text message in chat widget | Message appears for all connected users | ☐ |
+| 8.2 | Upload an image in chat | Image displayed inline in chat | ☐ |
+| 8.3 | Upload a file (PDF/DOC) in chat | File link displayed, downloadable | ☐ |
+| 8.4 | Add emoji reaction to a message | Reaction appears with user count | ☐ |
+| 8.5 | Toggle same emoji reaction off | Reaction removed | ☐ |
+| 8.6 | Reply to a message | Reply shows original message context | ☐ |
+| 8.7 | Mention a user with @ | Username autocomplete appears | ☐ |
+| 8.8 | GET `/api/v1/chat/history?limit=50` | Returns last 50 messages with reactions | ☐ |
+
+---
+
+## Step 9 — CCCD Upload & Approval Workflow
+
+| # | Action | Expected Result | Pass |
+|---|--------|-----------------|------|
+| 9.1 | Resident requests apartment join with CCCD front/back images | 200 OK — status becomes PENDING | ☐ |
+| 9.2 | Request without CCCD images | 400 Bad Request — validation error | ☐ |
+| 9.3 | Admin views pending resident with CCCD images | Images visible in approval page | ☐ |
+| 9.4 | Admin approves resident request | Status becomes ACTIVE | ☐ |
+| 9.5 | Admin rejects resident request with reason | Status becomes REJECTED with reason | ☐ |
+
+---
+
+## Step 10 — Announcements, Vehicles & Reports
+
+| # | Action | Expected Result | Pass |
+|---|--------|-----------------|------|
+| 10.1 | Create announcement (as ADMIN) | Announcement visible to all users | ☐ |
+| 10.2 | Register vehicle for a resident | Vehicle appears in list | ☐ |
+| 10.3 | Resident submits a report/complaint | Report saved, admin can view | ☐ |
+| 10.4 | Resident views own fees and payments | Correct data displayed | ☐ |
+
+---
+
 ## Sign-off
 
 | Role | Name | Date | Signature |
