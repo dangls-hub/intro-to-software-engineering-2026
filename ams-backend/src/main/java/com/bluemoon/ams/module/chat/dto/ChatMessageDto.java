@@ -29,5 +29,13 @@ public class ChatMessageDto {
     private Long replyToId;
     private String replyToContent;
     private String replyToSender;
+
+    @Builder.Default
+    private boolean recalled = false;
+
+    private String hiddenUsernames;
+
+    @Builder.Default
+    private boolean pinned = false;
 }
 

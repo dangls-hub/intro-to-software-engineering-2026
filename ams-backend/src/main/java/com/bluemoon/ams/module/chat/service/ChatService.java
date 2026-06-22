@@ -8,6 +8,7 @@ import com.bluemoon.ams.module.chat.entity.ChatReaction;
 import com.bluemoon.ams.module.chat.repository.ChatMessageRepository;
 import com.bluemoon.ams.module.chat.repository.ChatReactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReactionRepository chatReactionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public ChatMessageDto saveMessage(ChatMessageDto chatMessageDto) {
@@ -49,8 +51,10 @@ public class ChatService {
         chatMessageDto.setReplyToContent(savedMessage.getReplyToContent());
         chatMessageDto.setReplyToSender(savedMessage.getReplyToSender());
         chatMessageDto.setReactions(new HashMap<>());
+        chatMessageDto.setPinned(savedMessage.isPinned());
         return chatMessageDto;
     }
+
 
     @Transactional(readOnly = true)
     public List<ChatMessageDto> getChatHistory(int limit) {
@@ -89,6 +93,9 @@ public class ChatService {
                         .replyToContent(msg.getReplyToContent())
                         .replyToSender(msg.getReplyToSender())
                         .reactions(finalReactionsMap.getOrDefault(msg.getId(), new HashMap<>()))
+                        .recalled(msg.isRecalled())
+                        .hiddenUsernames(msg.getHiddenUsernames())
+                        .pinned(msg.isPinned())
                         .build())
                 .collect(Collectors.toList());
         
@@ -137,5 +144,203 @@ public class ChatService {
                         ChatReaction::getEmoji,
                         Collectors.mapping(ChatReaction::getUsername, Collectors.toList())
                 ));
+    }
+
+    @Transactional
+    public ChatMessageDto recallMessage(Long messageId, String username) {
+        Optional<ChatMessage> opt = chatMessageRepository.findById(messageId);
+        if (opt.isPresent()) {
+            ChatMessage msg = opt.get();
+            // Check if requester is the sender
+            if (msg.getSenderName().equals(username)) {
+                msg.setRecalled(true);
+                msg.setContent("");
+                msg.setMediaUrl(null);
+                msg.setPinned(false); // Unpin if recalled
+                chatMessageRepository.save(msg);
+                
+                // Clear all reactions for this message
+                chatReactionRepository.deleteByMessageId(messageId);
+                
+                return ChatMessageDto.builder()
+                        .id(msg.getId())
+                        .content("")
+                        .senderName(msg.getSenderName())
+                        .senderRole(msg.getSenderRole())
+                        .timestamp(msg.getTimestamp())
+                        .type(msg.getType())
+                        .mediaUrl(null)
+                        .recalled(true)
+                        .reactions(new HashMap<>())
+                        .replyToId(msg.getReplyToId())
+                        .replyToContent(msg.getReplyToContent())
+                        .replyToSender(msg.getReplyToSender())
+                        .build();
+            }
+        }
+        return null;
+    }
+
+    @Transactional
+    public ChatMessageDto hideMessage(Long messageId, String username) {
+        Optional<ChatMessage> opt = chatMessageRepository.findById(messageId);
+        if (opt.isPresent()) {
+            ChatMessage msg = opt.get();
+            String currentHidden = msg.getHiddenUsernames();
+            if (currentHidden == null || currentHidden.isEmpty()) {
+                msg.setHiddenUsernames(username);
+            } else {
+                List<String> usersList = new ArrayList<>(Arrays.asList(currentHidden.split(",")));
+                if (!usersList.contains(username)) {
+                    usersList.add(username);
+                    msg.setHiddenUsernames(String.join(",", usersList));
+                }
+            }
+            chatMessageRepository.save(msg);
+            
+            return ChatMessageDto.builder()
+                    .id(msg.getId())
+                    .content(msg.getContent())
+                    .senderName(msg.getSenderName())
+                    .senderRole(msg.getSenderRole())
+                    .timestamp(msg.getTimestamp())
+                    .type(msg.getType())
+                    .mediaUrl(msg.getMediaUrl())
+                    .recalled(msg.isRecalled())
+                    .reactions(getReactionsMap(msg.getId()))
+                    .replyToId(msg.getReplyToId())
+                    .replyToContent(msg.getReplyToContent())
+                    .replyToSender(msg.getReplyToSender())
+                    .hiddenUsernames(msg.getHiddenUsernames())
+                    .build();
+        }
+        return null;
+    }
+
+    @Transactional
+    public ChatMessageDto togglePinMessage(Long messageId, String username) {
+        Optional<ChatMessage> opt = chatMessageRepository.findById(messageId);
+        if (opt.isPresent()) {
+            ChatMessage msg = opt.get();
+            // Recalled messages cannot be pinned
+            if (msg.isRecalled()) {
+                return null;
+            }
+            
+            boolean newPinned = !msg.isPinned();
+            msg.setPinned(newPinned);
+            chatMessageRepository.save(msg);
+            
+            // If newly pinned or unpinned, create a SYSTEM message in the chat history
+            if (newPinned) {
+                ChatMessage systemMsg = ChatMessage.builder()
+                        .content(username + " đã ghim một tin nhắn.")
+                        .senderName("SYSTEM")
+                        .senderRole("SYSTEM")
+                        .type("SYSTEM")
+                        .timestamp(LocalDateTime.now())
+                        .replyToId(messageId)
+                        .build();
+                ChatMessage savedSystemMsg = chatMessageRepository.save(systemMsg);
+                
+                // Broadcast SYSTEM message to public chat topic
+                ChatMessageDto systemMsgDto = ChatMessageDto.builder()
+                        .id(savedSystemMsg.getId())
+                        .content(savedSystemMsg.getContent())
+                        .senderName(savedSystemMsg.getSenderName())
+                        .senderRole(savedSystemMsg.getSenderRole())
+                        .type(savedSystemMsg.getType())
+                        .timestamp(savedSystemMsg.getTimestamp())
+                        .replyToId(savedSystemMsg.getReplyToId())
+                        .reactions(new HashMap<>())
+                        .build();
+                messagingTemplate.convertAndSend("/topic/public", systemMsgDto);
+            } else {
+                ChatMessage systemMsg = ChatMessage.builder()
+                        .content(username + " đã bỏ ghim một tin nhắn.")
+                        .senderName("SYSTEM")
+                        .senderRole("SYSTEM")
+                        .type("SYSTEM")
+                        .timestamp(LocalDateTime.now())
+                        .replyToId(messageId)
+                        .build();
+                ChatMessage savedSystemMsg = chatMessageRepository.save(systemMsg);
+                
+                // Broadcast SYSTEM message to public chat topic
+                ChatMessageDto systemMsgDto = ChatMessageDto.builder()
+                        .id(savedSystemMsg.getId())
+                        .content(savedSystemMsg.getContent())
+                        .senderName(savedSystemMsg.getSenderName())
+                        .senderRole(savedSystemMsg.getSenderRole())
+                        .type(savedSystemMsg.getType())
+                        .timestamp(savedSystemMsg.getTimestamp())
+                        .replyToId(savedSystemMsg.getReplyToId())
+                        .reactions(new HashMap<>())
+                        .build();
+                messagingTemplate.convertAndSend("/topic/public", systemMsgDto);
+            }
+            
+            ChatMessageDto resultDto = ChatMessageDto.builder()
+                    .id(msg.getId())
+                    .content(msg.getContent())
+                    .senderName(msg.getSenderName())
+                    .senderRole(msg.getSenderRole())
+                    .timestamp(msg.getTimestamp())
+                    .type(msg.getType())
+                    .mediaUrl(msg.getMediaUrl())
+                    .recalled(msg.isRecalled())
+                    .reactions(getReactionsMap(msg.getId()))
+                    .replyToId(msg.getReplyToId())
+                    .replyToContent(msg.getReplyToContent())
+                    .replyToSender(msg.getReplyToSender())
+                    .hiddenUsernames(msg.getHiddenUsernames())
+                    .pinned(msg.isPinned())
+                    .build();
+            
+            // Also broadcast pin change event to the pin topic
+            messagingTemplate.convertAndSend("/topic/pin", resultDto);
+            
+            return resultDto;
+        }
+        return null;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatMessageDto> getPinnedMessages() {
+        List<ChatMessage> pinned = chatMessageRepository.findByPinnedTrueOrderByTimestampDesc();
+        List<Long> messageIds = pinned.stream().map(ChatMessage::getId).collect(Collectors.toList());
+        
+        Map<Long, Map<String, List<String>>> messageReactionsMap = new HashMap<>();
+        if (!messageIds.isEmpty()) {
+            List<ChatReaction> allReactions = chatReactionRepository.findByMessageIdIn(messageIds);
+            messageReactionsMap = allReactions.stream()
+                    .collect(Collectors.groupingBy(
+                            ChatReaction::getMessageId,
+                            Collectors.groupingBy(
+                                    ChatReaction::getEmoji,
+                                    Collectors.mapping(ChatReaction::getUsername, Collectors.toList())
+                            )
+                    ));
+        }
+        
+        Map<Long, Map<String, List<String>>> finalReactionsMap = messageReactionsMap;
+        return pinned.stream()
+                .map(msg -> ChatMessageDto.builder()
+                        .id(msg.getId())
+                        .content(msg.getContent())
+                        .senderName(msg.getSenderName())
+                        .senderRole(msg.getSenderRole())
+                        .type(msg.getType())
+                        .mediaUrl(msg.getMediaUrl())
+                        .timestamp(msg.getTimestamp())
+                        .replyToId(msg.getReplyToId())
+                        .replyToContent(msg.getReplyToContent())
+                        .replyToSender(msg.getReplyToSender())
+                        .reactions(finalReactionsMap.getOrDefault(msg.getId(), new HashMap<>()))
+                        .recalled(msg.isRecalled())
+                        .hiddenUsernames(msg.getHiddenUsernames())
+                        .pinned(msg.isPinned())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
