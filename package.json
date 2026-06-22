@@ -1,0 +1,17 @@
+{
+  "name": "intro-to-software-engineering-2026",
+  "version": "1.0.0",
+  "description": "## Giới thiệu dự án **BlueMoon AMS** là hệ thống phần mềm tập trung nhằm chuyển đổi số quy trình quản lý thông tin hộ dân và quản lý thu phí từ mô hình vận hành thủ công. Hệ thống được xây dựng mới hoàn toàn nhằm tối ưu hóa hiệu suất nghiệp vụ tại chung cư Blue Moon.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^26.0.0"
+  }
+}

@@ -17,7 +17,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- USERS
 -- ============================================================
 INSERT INTO users (username, password, email, full_name, role, created_at, updated_at) VALUES
-('admin',     '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'admin@bluemoon.vn',     'Quản trị viên',    'ADMIN',    NOW(), NOW()),
+('admin',     '$2a$10$yBeKxPLBX9g38SMH7Kb.1.Ry3IV8RI7N8IHQI8obiYBEBHV.S2owG', 'admin@bluemoon.vn',     'Quản trị viên',    'ADMIN',    NOW(), NOW()),
 ('staff1',    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'staff1@bluemoon.vn',    'Nguyễn Thị Lan',   'STAFF',    NOW(), NOW()),
 ('staff2',    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'staff2@bluemoon.vn',    'Trần Văn Minh',    'STAFF',    NOW(), NOW()),
 ('resident1', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'resident1@example.com', 'Lê Văn An',        'RESIDENT', NOW(), NOW()),

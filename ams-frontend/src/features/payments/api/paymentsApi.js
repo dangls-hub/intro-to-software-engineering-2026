@@ -1,7 +1,7 @@
 import { apiClient, asArray, unwrapData } from '../../../lib/apiClient';
 
 export async function fetchPayments() {
-  return asArray(await apiClient('/payments'));
+  return asArray(await apiClient('/payments?size=1000'));
 }
 
 export async function createPayment(payment) {

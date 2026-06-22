@@ -172,11 +172,11 @@ function AppLayout() {
                 <Route element={<ApartmentsPage />} path="apartments" />
                 <Route element={<ResidentsPage />} path="residents" />
                 <Route element={<VehiclesPage />} path="vehicles" />
-                <Route element={<ApprovalsPage />} path="approvals" />
+                <Route element={<PrivateRoute roles={['ADMIN']}><ApprovalsPage /></PrivateRoute>} path="approvals" />
                 <Route element={<FeesPage role={role} />} path="fees" />
                 <Route element={<FeesByApartmentPage />} path="fees-by-apartment" />
                 <Route element={<PaymentsPage role={role} />} path="payments" />
-                <Route element={<PaymentApprovalsPage />} path="payment-approvals" />
+                <Route element={<PrivateRoute roles={['ADMIN']}><PaymentApprovalsPage /></PrivateRoute>} path="payment-approvals" />
                 <Route element={<ReportsPage />} path="reports" />
                 <Route element={<Navigate replace to="/" />} path="*" />
               </Routes>
