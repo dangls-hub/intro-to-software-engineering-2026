@@ -54,7 +54,6 @@ intro-to-software-engineering-2026/
 |   |-- environments/              # Mẫu cấu hình môi trường
 |   `-- nginx/                     # Reverse proxy nếu triển khai web
 |-- docs/
-|   |-- 01-planning/
 |   |-- 02-requirements/
 |   |-- 03-design/
 |   |-- 04-testing/

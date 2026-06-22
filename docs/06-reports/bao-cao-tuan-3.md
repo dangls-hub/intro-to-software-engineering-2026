@@ -93,7 +93,6 @@
 
 | Tài liệu | Đường dẫn | Trạng thái |
 |---|---|---|
-| Kế hoạch sprint 1-3 | `docs/01-planning/` | ✅ Done |
 | Yêu cầu phần mềm | `docs/02-requirements/` | ✅ Done |
 | Thiết kế hệ thống | `docs/03-design/` | ✅ Done |
 | Checklist kiểm thử | `docs/04-testing/checklist.md` | ✅ Done (chưa điền kết quả) |
