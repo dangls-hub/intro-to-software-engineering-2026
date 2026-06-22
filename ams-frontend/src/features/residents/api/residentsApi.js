@@ -1,7 +1,7 @@
 import { apiClient, asArray, unwrapData } from '../../../lib/apiClient';
 
 export async function fetchResidents() {
-  return asArray(await apiClient('/residents'));
+  return asArray(await apiClient('/residents?size=1000'));
 }
 
 export async function createResident(resident) {
