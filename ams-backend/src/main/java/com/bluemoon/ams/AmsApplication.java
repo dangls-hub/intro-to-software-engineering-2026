@@ -43,6 +43,23 @@ public class AmsApplication {
                 }
             );
 
+            // Seed Staff User
+            userRepository.findByUsername("staff").ifPresentOrElse(
+                staff -> {
+                    staff.setPassword(passwordEncoder.encode("staff123"));
+                    userRepository.save(staff);
+                },
+                () -> {
+                    User staff = new User();
+                    staff.setUsername("staff");
+                    staff.setPassword(passwordEncoder.encode("staff123"));
+                    staff.setEmail("staff@bluemoon.vn");
+                    staff.setFullName("Nhân viên BQL");
+                    staff.setRole(Role.STAFF);
+                    userRepository.save(staff);
+                }
+            );
+
             // Seed Default Apartments
             if (apartmentRepository.count() == 0) {
                 apartmentRepository.save(Apartment.builder()
